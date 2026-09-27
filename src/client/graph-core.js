@@ -25,6 +25,7 @@ export function createSim(nodes, edges, opts = {}) {
 
   const simNodes = nodes.map((n) => ({
     id: n.id,
+    title: n.title || n.id, // display label (regression: labels showed raw paths)
     kind: n.kind || 'note',
     degree: n.degree || 0,
     x: (rand() - 0.5) * width,

@@ -12,10 +12,10 @@ export const NK_CSS = `
   --nk-on-accent:var(--tz-on-accent,#fbf7f4);--nk-shadow:var(--tz-shadow-pop,6px 6px 0 rgba(0,0,0,.45));
   --nk-display:var(--tz-font-display,"Silkscreen",ui-monospace,monospace);--nk-mono:var(--tz-font-mono,ui-monospace,SFMono-Regular,Menlo,monospace);
   --nk-ok:var(--dsw-alias-state-success-primary,#4f9d69);--nk-err:var(--dsw-alias-state-error-primary,#e0685a);--nk-warn:var(--dsw-alias-state-warn-primary,#c8952f);
-  position:relative;display:flex;flex-direction:column;height:100%;min-height:0;width:100%;background:var(--nk-bg);color:var(--nk-fg);font-size:14px;line-height:1.5}
+  position:relative;display:flex;flex-direction:column;height:100%;min-height:0;width:100%;background:var(--nk-bg);color:var(--nk-fg);font-size:14px;line-height:1.5;container-type:inline-size;container-name:nk}
 .nk-root *{box-sizing:border-box;border-radius:0}
 .nk-root button{font:inherit;color:inherit}
-.nk-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--nk-line);background:var(--nk-bg2);flex:none;flex-wrap:wrap}
+.nk-head{display:flex;align-items:center;gap:10px;padding:10px 96px 10px 14px;border-bottom:1px solid var(--nk-line);background:var(--nk-bg2);flex:none;flex-wrap:wrap}
 .nk-brand{font-family:var(--nk-display);font-size:13px;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:8px;white-space:nowrap}
 .nk-brand i{width:10px;height:10px;background:var(--nk-accent);display:inline-block;box-shadow:2px 2px 0 var(--nk-accent2)}
 .nk-vault{font-family:var(--nk-mono);font-size:11px;color:var(--nk-fg3)}
@@ -67,6 +67,7 @@ export const NK_CSS = `
 .nk-editwrap.nk-split{grid-template-columns:1fr 1fr}
 .nk-textarea{width:100%;height:100%;resize:none;border:none;outline:none;background:var(--nk-bg);color:var(--nk-fg);font-family:var(--nk-mono);font-size:13.5px;line-height:1.65;padding:18px 22px;tab-size:2}
 .nk-split .nk-textarea{border-right:1px solid var(--nk-line)}
+.nk-root .nk-textarea:focus,.nk-root .nk-textarea:focus-visible{outline:none !important;box-shadow:none !important}
 .nk-preview{overflow:auto;padding:18px 26px 60px;min-height:0}
 .nk-status{display:flex;gap:14px;padding:4px 14px;border-top:1px solid var(--nk-line);font-size:11px;color:var(--nk-fg3);font-family:var(--nk-mono);flex:none;flex-wrap:wrap}
 .nk-status .nk-dirty{color:var(--nk-warn)} .nk-status .nk-saved{color:var(--nk-ok)} .nk-status .nk-errtxt{color:var(--nk-err)}
@@ -136,7 +137,7 @@ export const NK_CSS = `
 .nk-toast.nk-errt{border-color:var(--nk-err)}
 .nk-dropzone{outline:2px dashed var(--nk-accent);outline-offset:-6px}
 .nk-panel-icon{display:inline-flex;align-items:center;justify-content:center}
-@media (max-width:1100px){.nk-body{grid-template-columns:230px minmax(0,1fr)}.nk-info{display:none}}
-@media (max-width:760px){.nk-body,.nk-body.nk-no-info{grid-template-columns:1fr}.nk-side{display:none}.nk-root.nk-show-side .nk-side{display:flex;position:absolute;z-index:40;top:0;bottom:0;left:0;width:82%;box-shadow:var(--nk-shadow)}.nk-editwrap.nk-split{grid-template-columns:1fr}.nk-split .nk-preview{display:none}.nk-search{width:140px}}
-@media (min-width:761px){.nk-only-narrow{display:none}}
+@container nk (max-width:1100px){.nk-body{grid-template-columns:230px minmax(0,1fr)}.nk-info{display:none}}
+@container nk (max-width:760px){.nk-head{padding-right:14px}.nk-body,.nk-body.nk-no-info{grid-template-columns:1fr}.nk-side{display:none}.nk-root.nk-show-side .nk-side{display:flex;position:absolute;z-index:40;top:0;bottom:0;left:0;width:82%;box-shadow:var(--nk-shadow)}.nk-editwrap.nk-split{grid-template-columns:1fr}.nk-split .nk-preview{display:none}.nk-search{width:140px}}
+@container nk (min-width:761px){.nk-only-narrow{display:none}}
 `

@@ -57,9 +57,9 @@ export function Icon({ name, size = 16, title }) {
   )
 }
 
-export function IBtn({ icon, title, onClick, active, disabled }) {
+export function IBtn({ icon, title, onClick, active, disabled, className }) {
   return (
-    <button type="button" className={'nk-ibtn' + (active ? ' nk-on' : '')} title={title} aria-label={title} onClick={onClick} disabled={disabled}>
+    <button type="button" className={'nk-ibtn' + (active ? ' nk-on' : '') + (className ? ' ' + className : '')} title={title} aria-label={title} onClick={onClick} disabled={disabled}>
       <Icon name={icon} />
     </button>
   )

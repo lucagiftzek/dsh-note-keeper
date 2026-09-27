@@ -376,6 +376,32 @@ func TestOCRWithTesseract(t *testing.T) {
 	}
 }
 
+// Regression (found live): a transparent canvas with huge hand strokes read
+// as garbage. Big thick "HI" on a transparent 800x600 RGBA canvas.
+func TestOCRTransparentCanvasDrawing(t *testing.T) {
+	if _, err := exec.LookPath("tesseract"); err != nil {
+		t.Skip("tesseract not installed")
+	}
+	h := newHarness(t)
+	// testdata/canvas-hi.png is a real 800x600 transparent canvas export
+	// with "HI" drawn by brush in the live UI.
+	raw, err := os.ReadFile("testdata/canvas-hi.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var r struct{ Text string }
+	if c := h.do("POST", "/ocr?lang=eng%2Bell", raw, &r); c != 200 || !strings.Contains(strings.ToUpper(r.Text), "HI") {
+		t.Fatalf("canvas ocr %d %q", c, r.Text)
+	}
+	var buf bytes.Buffer
+	blank := image.NewNRGBA(image.Rect(0, 0, 100, 100))
+	buf.Reset()
+	_ = png.Encode(&buf, blank)
+	if c := h.do("POST", "/ocr?lang=eng", buf.Bytes(), &r); c != 200 || r.Text != "" {
+		t.Fatalf("blank canvas %d %q", c, r.Text)
+	}
+}
+
 func TestExternalEditsReachSubscribers(t *testing.T) {
 	h := newHarness(t)
 	h.w.Debounce = 20 * time.Millisecond

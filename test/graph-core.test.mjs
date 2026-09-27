@@ -96,3 +96,9 @@ test('filterLocal never pulls in the fully isolated node', () => {
   const result = filterLocal(nodes, edges, 'a', 5);
   assert.ok(!result.nodes.some((n) => n.id === 'isolated'));
 });
+
+test('sim nodes keep their display title (regression)', () => {
+  const sim = createSim([{ id: 'a/b.md', title: 'B note' }, { id: 'c.md' }], [])
+  assert.equal(sim.nodes[0].title, 'B note')
+  assert.equal(sim.nodes[1].title, 'c.md')
+})

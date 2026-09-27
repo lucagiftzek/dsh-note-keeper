@@ -728,7 +728,7 @@ export function App() {
   const NoteView = n ? (
     <section className="nk-main" aria-label="Note">
       <div className="nk-notehead">
-        <IBtn icon="menu" title="Files" onClick={() => setShowSide((s) => !s)} />
+        <IBtn icon="menu" title="Files" className="nk-only-narrow" onClick={() => setShowSide((s) => !s)} />
         <input className="nk-title" key={n.path} defaultValue={stem(n.path)} aria-label="Note title (renames the file)"
           onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur() }}
           onBlur={(e) => { const t = safeTitle(e.target.value); if (t !== stem(n.path)) doMove(n.path, (dirOf(n.path) ? dirOf(n.path) + '/' : '') + t + '.md') }} />
@@ -807,7 +807,7 @@ export function App() {
     const url = fileUrl(e.path)
     return (
       <section className="nk-main">
-        <div className="nk-notehead"><IBtn icon="menu" title="Files" onClick={() => setShowSide((s) => !s)} /><b style={{ flex: 1 }}>{baseOf(e.path)}</b><span className="nk-path">{fmtBytes(e.size)}</span>
+        <div className="nk-notehead"><IBtn icon="menu" title="Files" className="nk-only-narrow" onClick={() => setShowSide((s) => !s)} /><b style={{ flex: 1 }}>{baseOf(e.path)}</b><span className="nk-path">{fmtBytes(e.size)}</span>
           <a className="nk-btn" href={fileUrl(e.path, true)}>Download</a>
           <button type="button" className="nk-btn" onClick={() => { navigator.clipboard && navigator.clipboard.writeText('![[' + baseOf(e.path) + ']]'); say('Embed copied.') }}>Copy embed</button>
           {k === 'image' ? <button type="button" className="nk-btn" disabled={busy} onClick={async () => { setBusy(true); try { const r = await api.ocrPath(e.path, 'eng+ell'); setDialog({ type: 'ocr', text: r.text }) } catch (err) { say(errText(err), true) } finally { setBusy(false) } }}><Icon name="ocr" /> Extract text</button> : null}
@@ -847,7 +847,7 @@ export function App() {
   const SearchView = (
     <section className="nk-main">
       <div className="nk-notehead">
-        <IBtn icon="menu" title="Files" onClick={() => setShowSide((s) => !s)} />
+        <IBtn icon="menu" title="Files" className="nk-only-narrow" onClick={() => setShowSide((s) => !s)} />
         <b style={{ fontFamily: 'var(--nk-display)', fontSize: 12, letterSpacing: '.06em' }}>SEARCH</b>
         {tagFilter ? <span className="nk-chip nk-on" onClick={() => setTagFilter('')}>#{tagFilter} ×</span> : null}
         <span className="nk-spacer" /><small className="nk-path">{hits.length} result(s) · accent-insensitive · "exact phrase"</small>

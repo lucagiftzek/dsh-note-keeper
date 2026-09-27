@@ -117,7 +117,8 @@ export function GraphView({ nodes, edges, onOpen, focus, showTags, onToggleTags 
       tag: read('--tz-accent-2', '#5e9bd6'),
       ghost: read('--dsw-alias-label-secondary', '#c0b7b2'),
       attachment: read('--dsw-alias-label-primary', '#f4f0ed'),
-      edge: read('--dsw-alias-border-primary', '#3a332f'),
+      // Edges use the secondary label tone: the border tone is invisible on the dark background.
+      edge: read('--dsw-alias-label-tertiary', '#9a928e'),
       bg: read('--dsw-alias-bg-primary', '#131110'),
       label: read('--dsw-alias-label-primary', '#f4f0ed'),
     };

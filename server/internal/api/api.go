@@ -45,6 +45,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/lucagiftzek/dsh-note-keeper/server/internal/index"
 	"github.com/lucagiftzek/dsh-note-keeper/server/internal/note"
@@ -628,9 +629,40 @@ func (s *Server) OCR(ctx context.Context, imgPath, lang string) (string, error) 
 	defer func() { <-s.ocr }()
 	ctx, cancel := context.WithTimeout(ctx, s.cfg.OCRTimeout)
 	defer cancel()
-	// --psm 3: automatic page segmentation (handwriting on a canvas is
-	// usually a few scattered blocks).
-	cmd := exec.CommandContext(ctx, s.cfg.Tesseract, imgPath, "stdout", "-l", lang, "--psm", "3")
+	// Normalise first (flatten transparency, crop to ink, scale); fall back to
+	// the original file for formats the Go decoders do not know (webp, bmp).
+	input := imgPath
+	if tmp, err := os.CreateTemp("", "nk-ocr-prep-*.png"); err == nil {
+		ok, perr := PrepareForOCR(imgPath, tmp)
+		tmp.Close()
+		defer os.Remove(tmp.Name())
+		if perr == nil && !ok {
+			return "", nil // blank image: nothing to read
+		}
+		if perr == nil {
+			input = tmp.Name()
+		}
+	}
+	// --psm 3 (automatic layout) suits pages; single short hand-written words
+	// often need --psm 6/7. Take the first mode that yields real characters.
+	var best string
+	for _, psm := range []string{"3", "6", "7"} {
+		out, err := s.runTesseract(ctx, input, lang, psm)
+		if err != nil {
+			return "", err
+		}
+		if countAlnum(out) > countAlnum(best) {
+			best = out
+		}
+		if countAlnum(best) >= 2 {
+			break
+		}
+	}
+	return best, nil
+}
+
+func (s *Server) runTesseract(ctx context.Context, input, lang, psm string) (string, error) {
+	cmd := exec.CommandContext(ctx, s.cfg.Tesseract, input, "stdout", "-l", lang, "--psm", psm)
 	cmd.Env = []string{"PATH=/usr/local/bin:/usr/bin:/bin", "OMP_THREAD_LIMIT=1"}
 	out, err := cmd.Output()
 	if err != nil {
@@ -641,6 +673,16 @@ func (s *Server) OCR(ctx context.Context, imgPath, lang string) (string, error) 
 		return "", fmt.Errorf("tesseract failed: %v", err)
 	}
 	return strings.TrimSpace(string(out)), nil
+}
+
+func countAlnum(s string) int {
+	n := 0
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			n++
+		}
+	}
+	return n
 }
 
 func (s *Server) ocrHandler(w http.ResponseWriter, r *http.Request) {
