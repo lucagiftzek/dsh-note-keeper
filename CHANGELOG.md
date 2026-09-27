@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.2.0 — 2026-09-27
+
+- **Live preview editor** (CodeMirror 6): [[wikilinks]], [markdown](links) and #tags render
+  as clickable links and tag pills while typing; heading/emphasis markers hide, tasks become
+  checkboxes, image embeds render inline. Source, split and reading modes remain.
+  [[ and # autocompletion, Ctrl+K link, search (Ctrl+F).
+- **Connect** dialog, with every way to sync:
+  - **Note Keeper Sync for Obsidian** (`obsidian-plugin/`, desktop and mobile): pairing code
+    handshake, HMAC-signed requests, three-way merge with conflict copies, deletion guard,
+    encrypted-folder rules. Public endpoint `/nk-sync/` with its own authentication.
+  - **WebDAV** (`/nk-sync/dav/`) with per-app passwords, for Remotely Save, Cyberduck,
+    rclone and Files apps.
+  - **Cloud drives**: two-way rclone bisync mirror to Google Drive, OneDrive, Dropbox,
+    iCloud Drive, S3 and others, from the server.
+  - Device list with revoke.
+- **Import**: Markdown/text folders (Obsidian, Bear, Logseq, Joplin), HTML, Evernote .enex
+  (with attachments), Google Keep Takeout, Notion export zips (IDs stripped, links
+  rewritten to wikilinks, CSV databases to tables).
+- **AI Enhance** button on every note: fixes spelling and grammar, formats Markdown and
+  links related notes, using the DSH default model for new chats or a model chosen in the
+  gear's settings. Always previewed as a diff; invented links are dropped; encrypted notes
+  are never sent.
+- The lock button is context-aware: it encrypts the open plain note, or locks an unlocked one.
+
 ## 0.1.0 — 2026-09-28
 
 Initial release.

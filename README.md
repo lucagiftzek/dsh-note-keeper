@@ -69,6 +69,16 @@ Author: Loukas "Luca" Tzekos. License: MIT.
   with mine", instead of silently clobbering data.
 - **Autosave** — edits are saved 1.2 s after the last keystroke, and flushed
   immediately when the tab is hidden or closed.
+- **Live preview editor** — CodeMirror 6 with Obsidian-style live preview: links,
+  wikilinks and tags are clickable while you type; source, split and reading modes too.
+- **Connect** — the Note Keeper Sync plugin for Obsidian (desktop and mobile, two-way,
+  paired with a one-time code, signed requests), WebDAV for other apps, and a
+  two-way cloud mirror (Google Drive, OneDrive, Dropbox, iCloud Drive, S3) via rclone.
+  See [docs/SYNC-PROTOCOL.md](docs/SYNC-PROTOCOL.md).
+- **Import** — Obsidian/Bear/Logseq/Joplin Markdown, HTML, Evernote .enex, Google Keep
+  Takeout, Notion export zips.
+- **AI Enhance** — proofread, format and interlink a note with the DSH default model
+  (or any model chosen in its settings), previewed as a diff before anything changes.
 - **12 AI tools** (`notes_*`) — see the [AI tools](#ai-tools) table.
 
 ## Screenshots

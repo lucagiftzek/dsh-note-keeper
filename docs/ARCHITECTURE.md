@@ -89,6 +89,29 @@ Known limits: names stay visible; transcription of audio in an encrypted folder
 sends the audio to the speech service (the UI asks first); a compromised browser
 session can read what it unlocks.
 
+## Remote sync (v0.2)
+
+```
+ Obsidian + Note Keeper Sync plugin ─┐   HTTPS  ┌ Cloudflare ─ Traefik router llm-nk-sync ┐
+ WebDAV apps (Remotely Save, Files) ─┼────────▶ │ (PathPrefix /nk-sync/, no SSO,          │──▶ notekeeperd sync listener
+                                     ┘          └  rate limited)                          ┘    127.0.0.1:3095 (devsync)
+ notekeeperd ──rclone bisync──▶ Google Drive / OneDrive / Dropbox / iCloud Drive / S3
+```
+
+`server/internal/devsync` owns device pairing (`devices.json` in the state directory,
+outside the vault), request signing, the manifest (hash cache by size+mtime, ETag),
+compare-and-swap writes, WebDAV and the rclone runner. The public listener never
+reaches dsh or the browser API; it enforces the same vault path rules and the
+encrypted-folder rule. Full protocol: [SYNC-PROTOCOL.md](SYNC-PROTOCOL.md).
+
+## AI Enhance (v0.2)
+
+`lib/ai.js` runs in the host: it calls the harness LLM service (`ctx.llm`) with the
+default model for new chats (`ctx.agentDefaultModel`) unless AI settings pick
+another. The prompt forbids translation and invented facts; links are limited to
+existing note titles and any invented wikilink is unwrapped before the diff is
+shown. Frontmatter is never sent and is re-attached byte-exact.
+
 ## Failure modes
 
 - Daemon crash: restarted with exponential backoff (0.5 s → 30 s); the route
