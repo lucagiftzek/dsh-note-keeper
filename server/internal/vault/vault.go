@@ -481,6 +481,19 @@ func (v *Vault) Trash(rel string) (string, error) {
 	return filepath.ToSlash(filepath.Join(TrashDir, stamp, filepath.FromSlash(c))), nil
 }
 
+// Purge permanently deletes a file or folder (used when encrypting a folder:
+// the plaintext originals of attachments must not linger in .trash).
+func (v *Vault) Purge(rel string) error {
+	a, _, err := v.Resolve(rel, false)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Lstat(a); err != nil {
+		return ErrNotFound
+	}
+	return os.RemoveAll(a)
+}
+
 // WriteLockMarker stores a folder's lock metadata (salt + verifier JSON).
 func (v *Vault) WriteLockMarker(folder string, data []byte) error {
 	a, _, err := v.Resolve(folder, false)

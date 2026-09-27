@@ -449,6 +449,15 @@ func (s *Server) trash(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	if r.URL.Query().Get("purge") == "1" {
+		if err := s.v.Purge(c); err != nil {
+			fail(w, err)
+			return
+		}
+		s.w.Touch(c)
+		writeJSON(w, 200, map[string]any{"path": c, "purged": true})
+		return
+	}
 	dst, err := s.v.Trash(c)
 	if err != nil {
 		fail(w, err)
@@ -877,9 +886,15 @@ func (s *Server) delLock(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	// Refuse while any envelope remains: unlocking must not strand ciphertext
-	// outside a locked scope without the client having decrypted it first.
+	// Refuse while any envelope remains, unless the client says it is about to
+	// decrypt them (force=1: the browser holds the key and every envelope
+	// carries its own salt, so an interrupted decrypt stays recoverable). The
+	// AI tools never expose this route.
+	force := r.URL.Query().Get("force") == "1"
 	for _, d := range s.ix.All() {
+		if force {
+			break
+		}
 		if d.Encrypted && strings.HasPrefix(d.Path, c+"/") {
 			writeErr(w, http.StatusConflict, "still_encrypted", fmt.Errorf("decrypt %s before unlocking the folder", d.Path))
 			return

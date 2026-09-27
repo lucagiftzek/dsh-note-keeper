@@ -252,6 +252,18 @@ func TestFolderLockZeroKnowledge(t *testing.T) {
 	if c := h.do("PUT", "/note", map[string]any{"path": "Private/plain.md", "content": "---\nnk-encrypted: v1\n---\nnot really"}, nil); c != 403 {
 		t.Fatalf("fake envelope (no cipher block) accepted -> %d", c)
 	}
+	if c := h.do("DELETE", "/lock?folder=Private&force=1", nil, nil); c != 200 {
+		t.Fatalf("forced unlock -> %d", c)
+	}
+	if c := h.do("PUT", "/note", map[string]any{"path": "Private/plain.md", "content": "decrypted again"}, nil); c != 200 {
+		t.Fatalf("plaintext after unlock -> %d", c)
+	}
+	if c := h.do("DELETE", "/entry?path=Private/plain.md&purge=1", nil, nil); c != 200 {
+		t.Fatalf("purge -> %d", c)
+	}
+	if _, err := os.Stat(filepath.Join(h.v.Root(), ".trash")); err == nil {
+		t.Fatal("purge must not leave a copy in .trash")
+	}
 }
 
 func TestAttachmentsAndFileHeaders(t *testing.T) {
