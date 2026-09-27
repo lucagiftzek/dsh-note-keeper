@@ -62,6 +62,9 @@ func main() {
 		return
 	}
 	log.SetFlags(log.LstdFlags | log.Lmsgprefix)
+	if *parentStdin {
+		log.SetFlags(log.Lmsgprefix) // the supervising host already timestamps lines
+	}
 	log.SetPrefix("notekeeperd: ")
 	log.SetOutput(os.Stderr)
 
