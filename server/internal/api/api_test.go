@@ -87,6 +87,24 @@ func TestAuthRequired(t *testing.T) {
 	}
 }
 
+// Regression (found by the jsdom UI test): list fields must be [] not null.
+func TestEmptyListsAreArrays(t *testing.T) {
+	h := newHarness(t)
+	for _, p := range []string{"/tree", "/recent", "/tags", "/graph", "/search?q=zz", "/templates"} {
+		req, _ := http.NewRequest("GET", h.srv.URL+p, nil)
+		req.Header.Set("X-NK-Secret", secret)
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		b, _ := io.ReadAll(res.Body)
+		res.Body.Close()
+		if strings.Contains(string(b), "null") {
+			t.Errorf("%s returned null list: %s", p, b)
+		}
+	}
+}
+
 func TestNoteLifecycle(t *testing.T) {
 	h := newHarness(t)
 	var created struct {

@@ -228,6 +228,15 @@ func joinRel(folder, name string) string {
 	return folder + "/" + name
 }
 
+// nonNil turns a nil slice into an empty one so JSON carries [] (never null):
+// clients can then iterate every list field without null checks.
+func nonNil[T any](s []T) []T {
+	if s == nil {
+		return []T{}
+	}
+	return s
+}
+
 // ---- handlers ---------------------------------------------------------------
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
@@ -257,7 +266,7 @@ func (s *Server) tree(w http.ResponseWriter, _ *http.Request) {
 		}
 		out = append(out, r)
 	}
-	writeJSON(w, 200, map[string]any{"entries": out, "locked": s.v.LockedFolders(), "root": filepath.Base(s.v.Root())})
+	writeJSON(w, 200, map[string]any{"entries": out, "locked": nonNil(s.v.LockedFolders()), "root": filepath.Base(s.v.Root())})
 }
 
 func (s *Server) getNote(w http.ResponseWriter, r *http.Request) {
@@ -271,7 +280,7 @@ func (s *Server) getNote(w http.ResponseWriter, r *http.Request) {
 	doc, _ := s.ix.Get(c)
 	writeJSON(w, 200, map[string]any{
 		"path": c, "content": string(b), "mtime": mtime, "doc": doc,
-		"backlinks": s.ix.Backlinks(c), "lockedScope": s.v.LockedScope(c),
+		"backlinks": nonNil(s.ix.Backlinks(c)), "lockedScope": s.v.LockedScope(c),
 	})
 }
 
@@ -499,15 +508,12 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) tags(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, 200, map[string]any{"tags": s.ix.Tags()})
+	writeJSON(w, 200, map[string]any{"tags": nonNil(s.ix.Tags())})
 }
 
 func (s *Server) graph(w http.ResponseWriter, r *http.Request) {
 	nodes, edges := s.ix.Graph(r.URL.Query().Get("tags") == "1")
-	if edges == nil {
-		edges = []index.GraphEdge{}
-	}
-	writeJSON(w, 200, map[string]any{"nodes": nodes, "edges": edges})
+	writeJSON(w, 200, map[string]any{"nodes": nonNil(nodes), "edges": nonNil(edges)})
 }
 
 func (s *Server) backlinks(w http.ResponseWriter, r *http.Request) {
@@ -528,7 +534,7 @@ func (s *Server) recent(w http.ResponseWriter, r *http.Request) {
 	if limit <= 0 || limit > 200 {
 		limit = 30
 	}
-	writeJSON(w, 200, map[string]any{"notes": s.ix.Recent(limit)})
+	writeJSON(w, 200, map[string]any{"notes": nonNil(s.ix.Recent(limit))})
 }
 
 func (s *Server) attach(w http.ResponseWriter, r *http.Request) {

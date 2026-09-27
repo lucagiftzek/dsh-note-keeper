@@ -67,10 +67,10 @@ export function App() {
 
   // ---- vault model -----------------------------------------------------------
   const loadTree = useCallback(async () => {
-    try { setTree(await api.tree()) } catch (e) { say('Could not load the vault: ' + errText(e), true) }
+    try { const t = await api.tree(); setTree({ entries: t.entries || [], locked: t.locked || [], root: t.root || '' }) } catch (e) { say('Could not load the vault: ' + errText(e), true) }
   }, [say])
   const loadSide = useCallback(async () => {
-    try { const [t, r] = await Promise.all([api.tags(), api.recent(40)]); setTags(t.tags); setRecent(r.notes) } catch { /* shown by tree */ }
+    try { const [t, r] = await Promise.all([api.tags(), api.recent(40)]); setTags(t.tags || []); setRecent(r.notes || []) } catch { /* shown by tree */ }
   }, [])
   useEffect(() => {
     loadTree(); loadSide()
