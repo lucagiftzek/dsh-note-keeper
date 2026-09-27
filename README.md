@@ -83,6 +83,12 @@ Author: Loukas "Luca" Tzekos. License: MIT.
 
 ## Screenshots
 
+**v0.2** — live preview (links and tags clickable), AI Enhance diff review, Connect (Obsidian pairing):
+
+![Live preview](docs/screenshots/v2-live.png)
+![AI Enhance](docs/screenshots/v2-ai.png)
+![Connect](docs/screenshots/v2-connect.png)
+
 Captured from the live DSH GUI with the tzekos.eu theme (dark mode).
 
 | | |
