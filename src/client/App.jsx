@@ -783,7 +783,7 @@ export function App() {
           <button type="button" className="nk-btn nk-primary" onClick={unlockOpen}>Unlock…</button>
         </div>
       ) : (
-        <Editor text={n.text} setText={setText} mode={mode} render={render} linkTargets={linkTargets}
+        <Editor key={n.path} text={n.text} setText={setText} mode={mode} render={render} linkTargets={linkTargets}
           tagList={tagList} resolve={resolve} fileUrl={(p) => fileUrl(p)}
           onOpenLink={(t) => { const p = resolve(t); if (p) openPath(p); else setDialog({ type: 'confirm', title: 'Create note', message: <span>No note named <b>{t}</b> yet. Create it?</span>, okLabel: 'Create', onOk: async () => { setDialog(null); try { const np = await createNote(dirOf(t) || currentFolder(), baseOf(t), '# ' + baseOf(t) + '\n\n'); openPath(np, { edit: true }) } catch (e) { if (e.message !== 'cancelled') say(errText(e), true) } } }) }}
           onTag={(t) => openSearch('', t)} onUpload={onUpload} onSaveNow={() => saveNow()} />

@@ -25,7 +25,7 @@ before(async () => {
   vault = mkdtempSync(join(tmpdir(), 'nk-ui-'))
   mkdirSync(join(vault, 'Projects'))
   writeFileSync(join(vault, 'Projects', 'Alpha.md'), '# Alpha\nRocket launch plan #work\n\n- [ ] task one\n\nSee [[Beta]].')
-  writeFileSync(join(vault, 'Beta.md'), '# Beta\nΚαλημέρα')
+  writeFileSync(join(vault, 'Beta.md'), '---\ntags: [greek]\n---\n# Beta\nΚαλημέρα')
   writeFileSync(join(vault, 'Secret.md'), '---\nnk-encrypted: v1\nnk-scope: note\nnk-iter: 1000\nnk-salt: AAAAAAAAAAAAAAAAAAAAAA==\nnk-iv: AAAAAAAAAAAAAAAA\n---\n```nk-cipher\nQUJD\n```\n')
   daemon = new Daemon({ binary: BIN, env: { NK_VAULT: vault, NK_STATE: join(vault, '..', 'nk-ui-state-' + process.pid), NK_SYNC_ADDR: '127.0.0.1:0' } })
   daemon.start()
@@ -123,6 +123,10 @@ test('live preview: links and tags render as links, clickable; tasks are checkbo
   await mousedown(container.querySelector('.nk-cm .nk-cm-wikilink[data-target="Beta"]'))
   await act(async () => { await sleep(300) })
   assert.equal(container.querySelector('input.nk-title').value, 'Beta')
+  // Frontmatter collapses into a property strip (the cursor starts below it).
+  const props = container.querySelector('.nk-cm .nk-cm-props')
+  assert.ok(props, 'frontmatter rendered as properties')
+  assert.match(props.textContent, /tags\s*greek/)
 })
 
 test('edit, autosave, AI Enhance preview and apply', async () => {

@@ -18,6 +18,7 @@
  * @module dsh-note-keeper/client/cm/livepreview
  */
 import { ViewPlugin, Decoration, WidgetType, EditorView } from '@codemirror/view'
+import { StateField } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
 
 export const WIKI_RE = /(!?)\[\[([^\[\]|#\n]*)(#[^\[\]|\n]*)?(?:\|([^\[\]\n]*))?\]\]/g
@@ -131,13 +132,11 @@ export function buildDecorations(view, opts) {
   // Frontmatter is YAML, not Markdown (lezer would read "key: v" + "---" as a
   // setext heading): muted in source, a compact property strip in live
   // preview while the cursor is elsewhere.
+  // (The collapsed property strip itself is a block widget, which CodeMirror
+  // only accepts from a state field: see frontmatterField below.)
   const fmEnd = frontmatterEnd(state.doc)
-  if (fmEnd > 0) {
-    if (live && !touches(state, 0, fmEnd)) {
-      decos.push(Decoration.replace({ widget: new PropsWidget(state.doc.sliceString(4, Math.max(4, fmEnd - 4))), block: true }).range(0, fmEnd))
-    } else {
-      for (let i = 1; i <= state.doc.lineAt(fmEnd).number; i++) decos.push(Decoration.line({ class: 'nk-cm-fm' }).range(state.doc.line(i).from))
-    }
+  if (fmEnd > 0 && !(live && !touches(state, 0, fmEnd))) {
+    for (let i = 1; i <= state.doc.lineAt(fmEnd).number; i++) decos.push(Decoration.line({ class: 'nk-cm-fm' }).range(state.doc.line(i).from))
   }
 
   for (const { from, to } of view.visibleRanges) {
@@ -251,6 +250,20 @@ export function buildDecorations(view, opts) {
   return Decoration.set(decos, true)
 }
 
+/** Block widget for collapsed frontmatter (must come from a state field). */
+function frontmatterField(getOpts) {
+  const build = (state) => {
+    const fmEnd = frontmatterEnd(state.doc)
+    if (fmEnd <= 0 || !getOpts().live || touches(state, 0, fmEnd)) return Decoration.none
+    return Decoration.set([Decoration.replace({ widget: new PropsWidget(state.doc.sliceString(4, Math.max(4, fmEnd - 4))), block: true }).range(0, fmEnd)])
+  }
+  return StateField.define({
+    create: build,
+    update: (v, tr) => (tr.docChanged || tr.selection || tr.reconfigured ? build(tr.state) : v),
+    provide: (f) => [EditorView.decorations.from(f), EditorView.atomicRanges.from(f)],
+  })
+}
+
 /**
  * The live-preview extension set.
  * @param {() => { live: boolean, resolve: Function, fileUrl: Function }} getOpts
@@ -274,7 +287,7 @@ export function livePreview(getOpts) {
       return Decoration.set(out, true)
     }),
   })
-  return plugin
+  return [plugin, frontmatterField(getOpts)]
 }
 
 /**
