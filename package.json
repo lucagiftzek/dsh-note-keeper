@@ -1,0 +1,77 @@
+{
+  "name": "dsh-note-keeper",
+  "version": "0.1.0",
+  "description": "Note Keeper for the DeepSeek Harness web GUI: an Obsidian-compatible notes app in the left sidebar - Markdown notes, audio transcription (Greek/English), a retro paint canvas with OCR, attachments, client-side zero-knowledge encryption, tags, full-text search, backlinks and graph - with notes_* tools so models can read and write notes. Go backend.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "bin",
+    "cordis.patch.yml",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build:server": "cd server && go build -trimpath -ldflags '-s -w -X main.version=0.1.0' -o ../bin/notekeeperd ./cmd/notekeeperd",
+    "build:client": "node scripts/build.mjs",
+    "build": "npm run build:server && npm run build:client",
+    "check": "for f in lib/index.js lib/daemon.js lib/proxy.js lib/security.js lib/tools.js scripts/build.mjs; do node --check $f || exit 1; done && echo 'all files OK'",
+    "test:server": "cd server && go vet ./... && go test -race -count=1 ./...",
+    "test:host": "node --test test/*.test.mjs",
+    "test": "npm run test:server && npm run test:host"
+  },
+  "engines": {
+    "node": ">=22.5"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.1.1-rc.1"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-layout"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12",
+    "jsdom": "^26.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "notes",
+    "obsidian",
+    "markdown",
+    "encryption",
+    "transcription",
+    "ocr"
+  ],
+  "author": "Loukas \"Luca\" Tzekos",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucagiftzek/dsh-note-keeper.git"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.16",
+    "marked": "^15.0.12"
+  }
+}

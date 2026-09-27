@@ -1,0 +1,15 @@
+# dsh-note-keeper bundle patch: one host row. The node half (exports ".")
+# supervises the Go daemon, registers the /note-keeper/api route and the
+# notes_* agent tools. The browser half (lib/client.js, declared through
+# package.json dsh.client) adds the "Notes" entry to the left sidebar panel
+# list and the Note Keeper page in the main column.
+#
+# Optional config (all keys have defaults, see lib/index.js DEFAULTS):
+#   config:
+#     vault: ~/NoteKeeper          # point at an existing Obsidian vault to share it
+#     trustedHosts: [llm.tzekos.eu]
+#     aiWrite: true
+#     aiDelete: true
+- insert:
+    - id: dsh-note-keeper
+      name: 'dsh-note-keeper'
