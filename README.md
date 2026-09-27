@@ -73,8 +73,13 @@ Author: Loukas "Luca" Tzekos. License: MIT.
 
 ## Screenshots
 
-_(placeholder — add screenshots of the sidebar list, the split editor, the
-graph view and the paint canvas here)._
+Captured from the live DSH GUI with the tzekos.eu theme (dark mode).
+
+| | |
+|---|---|
+| ![Home](docs/screenshots/home.png) | ![Editor with live preview, tags, backlinks](docs/screenshots/editor.png) |
+| ![Encryption set-up with the mandatory warning](docs/screenshots/encrypt-warning.png) | ![Retro paint canvas](docs/screenshots/paint.png) |
+| ![Greek audio note with transcript](docs/screenshots/audio-note.png) | ![Graph view](docs/screenshots/graph.png) |
 
 ## Install
 
