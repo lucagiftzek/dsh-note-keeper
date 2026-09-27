@@ -65,7 +65,7 @@ func TestImportENEXTodoAndMediaEmbed(t *testing.T) {
 		t.Fatalf("rep = %+v", rep)
 	}
 	body := mustRead(t, v, "Checklist.md")
-	if !strings.Contains(body, "[x] Buy milk") {
+	if !strings.Contains(body, "- [x] Buy milk") {
 		t.Errorf("checked todo missing: %s", body)
 	}
 	if !strings.Contains(body, "[ ] Buy eggs") {

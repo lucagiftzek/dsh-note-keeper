@@ -185,9 +185,13 @@ export function App() {
     const cur = noteRef.current
     if (!cur || cur.path !== path) return
     try {
+      if (saving.current) return // our own save is in flight; its result decides
       const res = await api.note(path)
-      if (res.mtime === cur.mtime) return
-      if (cur.text !== cur.saved) { setNote((n) => n && n.path === path ? { ...n, conflict: { content: res.content, mtime: res.mtime } } : n); return }
+      const now = noteRef.current // the note may have been saved while we fetched
+      if (!now || now.path !== path || saving.current) return
+      if (res.mtime === now.mtime) return
+      if (!now.env && res.content === now.text) { setNote((n) => n && n.path === path ? { ...n, mtime: res.mtime, saved: res.content } : n); return }
+      if (now.text !== now.saved) { setNote((n) => n && n.path === path ? { ...n, conflict: { content: res.content, mtime: res.mtime } } : n); return }
       const env = parseEnvelope(res.content)
       const n = env ? await decryptInto(path, res, env) : { path, mtime: res.mtime, env: null, keyId: null, locked: false, text: res.content, saved: res.content }
       n.backlinks = res.backlinks

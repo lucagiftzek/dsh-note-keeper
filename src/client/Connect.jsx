@@ -205,6 +205,7 @@ function DevicesTab({ st, onChange }) {
 
 function DeviceList({ devices, onChange, empty }) {
   const [err, setErr] = useState('')
+  const [armed, setArmed] = useState('') // two-step revoke without a native confirm()
   if (!devices.length) return <p className="nk-path">{empty}</p>
   return (
     <table className="nk-devices">
@@ -216,10 +217,11 @@ function DeviceList({ devices, onChange, empty }) {
             <td>{d.kind === 'webdav' ? 'WebDAV' : 'Obsidian sync'}</td>
             <td>{ago(d.created)}</td>
             <td>{ago(d.lastSeen)}</td>
-            <td><button type="button" className="nk-btn nk-sm nk-danger" onClick={async () => {
-              if (!window.confirm('Revoke ' + d.name + '? It will stop syncing immediately.')) return
+            <td><button type="button" className="nk-btn nk-sm nk-danger" title="It stops syncing immediately" onBlur={() => setArmed('')} onClick={async () => {
+              if (armed !== d.id) { setArmed(d.id); return }
+              setArmed('')
               try { await api.syncRevoke(d.id); onChange() } catch (e) { setErr(e.message) }
-            }}>Revoke</button></td>
+            }}>{armed === d.id ? 'Confirm revoke' : 'Revoke'}</button></td>
           </tr>
         ))}
       </tbody>

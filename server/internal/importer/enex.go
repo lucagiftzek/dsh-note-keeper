@@ -233,6 +233,7 @@ func convertENML(content string, embedNames map[string]string) string {
 	_, body := ConvertHTML([]byte(content))
 	body = strings.ReplaceAll(body, markStart+"TODO:1"+markEnd, "[x] ")
 	body = strings.ReplaceAll(body, markStart+"TODO:0"+markEnd, "[ ] ")
+	body = taskLines(body)
 	body = reEmbed.ReplaceAllString(body, "![[$1]]")
 	return body
 }
@@ -243,4 +244,27 @@ func parseTagAttrs(tag string) map[string]string {
 		out[strings.ToLower(m[1])] = m[2]
 	}
 	return out
+}
+
+// taskLines turns bare "[x] item" lines (Evernote to-dos sit in <div>s, not
+// lists) into Markdown task items, and joins consecutive ones into one list.
+func taskLines(body string) string {
+	lines := strings.Split(body, "\n")
+	isTask := func(s string) bool {
+		t := strings.TrimSpace(s)
+		return strings.HasPrefix(t, "[x] ") || strings.HasPrefix(t, "[ ] ") || strings.HasPrefix(t, "- [x] ") || strings.HasPrefix(t, "- [ ] ")
+	}
+	out := make([]string, 0, len(lines))
+	for i, l := range lines {
+		t := strings.TrimSpace(l)
+		if strings.HasPrefix(t, "[x] ") || strings.HasPrefix(t, "[ ] ") {
+			l = "- " + t
+		}
+		// Drop a blank line sitting between two task items.
+		if t == "" && len(out) > 0 && isTask(out[len(out)-1]) && i+1 < len(lines) && isTask(lines[i+1]) {
+			continue
+		}
+		out = append(out, l)
+	}
+	return strings.Join(out, "\n")
 }

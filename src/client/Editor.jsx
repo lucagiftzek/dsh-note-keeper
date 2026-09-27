@@ -173,6 +173,8 @@ export function Editor({ text, setText, mode, render, onOpenLink, onTag, onUploa
       parent: host.current,
       state: EditorState.create({
         doc: text,
+        // Start below the frontmatter so live preview shows it as a property strip.
+        selection: { anchor: Math.min(text.length, (/^---\r?\n[\s\S]*?\r?\n(?:---|\.\.\.)(?:\r?\n|$)/.exec(text) || [''])[0].length) },
         extensions: [
           history(),
           drawSelection(),
