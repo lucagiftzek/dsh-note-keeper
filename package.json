@@ -21,10 +21,11 @@
     "build:server": "cd server && go build -trimpath -ldflags '-s -w -X main.version=0.1.0' -o ../bin/notekeeperd ./cmd/notekeeperd",
     "build:client": "node scripts/build.mjs",
     "build": "npm run build:server && npm run build:client",
-    "check": "for f in lib/index.js lib/daemon.js lib/proxy.js lib/security.js lib/tools.js scripts/build.mjs; do node --check $f || exit 1; done && echo 'all files OK'",
+    "check": "for f in lib/index.js lib/daemon.js lib/proxy.js lib/security.js lib/tools.js scripts/build.mjs test/*.mjs src/client/*.js; do node --check $f || exit 1; done && echo 'all files OK'",
     "test:server": "cd server && go vet ./... && go test -race -count=1 ./...",
     "test:host": "node --test test/*.test.mjs",
-    "test": "npm run test:server && npm run test:host"
+    "test": "npm run test:server && npm run test:host",
+    "lint": "cd server && go vet ./... && test -z \"$(gofmt -l .)\" && (command -v staticcheck >/dev/null && staticcheck ./... || ~/go/bin/staticcheck ./...) && cd .. && npm run check"
   },
   "engines": {
     "node": ">=22.5"

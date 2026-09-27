@@ -329,8 +329,7 @@ func snippet(d *Doc, terms []string) string {
 	folded := make([]rune, 0, len(raw))
 	back := make([]int, 0, len(raw)) // folded rune index -> raw rune index
 	for i, r := range raw {
-		f := []rune(note.Fold(string(r)))
-		for _, fr := range f {
+		for _, fr := range note.Fold(string(r)) {
 			folded = append(folded, fr)
 			back = append(back, i)
 		}

@@ -1,0 +1,31 @@
+name: ci
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: OCR engine (English + Greek)
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-ell
+      - run: npm ci
+      - name: Static analysis
+        run: |
+          cd server && go vet ./... && test -z "$(gofmt -l .)"
+          go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+          cd .. && npm run check
+      - run: npm run build
+      - run: npm test
+      - name: Client bundle is reproducible from source
+        run: git diff --stat --exit-code lib/client.js || echo "::warning::lib/client.js differs from a fresh build"

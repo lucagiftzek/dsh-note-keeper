@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"image"
+	"image/draw"
+	"image/png"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +20,9 @@ import (
 	"github.com/lucagiftzek/dsh-note-keeper/server/internal/index"
 	"github.com/lucagiftzek/dsh-note-keeper/server/internal/vault"
 	"github.com/lucagiftzek/dsh-note-keeper/server/internal/watch"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
+	"golang.org/x/image/math/fixed"
 )
 
 const secret = "test-secret-0123456789"
@@ -323,26 +329,50 @@ func TestAttachmentsAndFileHeaders(t *testing.T) {
 	}
 }
 
+// textPNG renders text with the stdlib-adjacent bitmap font, scaled up so
+// tesseract can read it (no ImageMagick/PIL dependency in CI).
+func textPNG(t *testing.T, text string, scale int) []byte {
+	t.Helper()
+	w, h := 7*len(text)+20, 30
+	small := image.NewGray(image.Rect(0, 0, w, h))
+	draw.Draw(small, small.Bounds(), image.White, image.Point{}, draw.Src)
+	d := &font.Drawer{Dst: small, Src: image.Black, Face: basicfont.Face7x13, Dot: fixed.P(10, 20)}
+	d.DrawString(text)
+	big := image.NewGray(image.Rect(0, 0, w*scale, h*scale))
+	for y := 0; y < h*scale; y++ {
+		for x := 0; x < w*scale; x++ {
+			big.SetGray(x, y, small.GrayAt(x/scale, y/scale))
+		}
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, big); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
 func TestOCRWithTesseract(t *testing.T) {
 	if _, err := exec.LookPath("tesseract"); err != nil {
 		t.Skip("tesseract not installed")
 	}
-	if _, err := exec.LookPath("convert"); err != nil {
-		t.Skip("imagemagick not installed")
-	}
 	h := newHarness(t)
-	img := filepath.Join(h.v.Root(), "ocr.png")
-	cmd := exec.Command("convert", "-size", "600x160", "xc:white", "-fill", "black", "-pointsize", "56", "-annotate", "+20+100", "Hello Notes", img)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Skipf("convert failed: %s", out)
+	img := textPNG(t, "HELLO NOTES", 4)
+	if err := os.WriteFile(filepath.Join(h.v.Root(), "ocr.png"), img, 0o600); err != nil {
+		t.Fatal(err)
 	}
 	var r struct{ Text string }
-	if c := h.do("POST", "/ocr", map[string]any{"path": "ocr.png", "lang": "eng"}, &r); c != 200 || !strings.Contains(strings.ToLower(r.Text), "hello") {
-		t.Fatalf("ocr %d %q", c, r.Text)
+	if c := h.do("POST", "/ocr", map[string]any{"path": "ocr.png", "lang": "eng"}, &r); c != 200 || !strings.Contains(strings.ToUpper(r.Text), "HELLO") {
+		t.Fatalf("ocr by path %d %q", c, r.Text)
 	}
-	raw, _ := os.ReadFile(img)
-	if c := h.do("POST", "/ocr?lang=eng", raw, &r); c != 200 || !strings.Contains(strings.ToLower(r.Text), "notes") {
+	if c := h.do("POST", "/ocr?lang=eng", img, &r); c != 200 || !strings.Contains(strings.ToUpper(r.Text), "HELLO") {
 		t.Fatalf("raw ocr %d %q", c, r.Text)
+	}
+	if c := h.do("POST", "/ocr", map[string]any{"path": "missing.png"}, nil); c != 404 {
+		t.Fatalf("missing image -> %d", c)
+	}
+	// A hostile lang value falls back to the default instead of reaching argv.
+	if c := h.do("POST", "/ocr?lang=--help;rm", img, &r); c != 200 {
+		t.Fatalf("lang sanitising -> %d", c)
 	}
 }
 
