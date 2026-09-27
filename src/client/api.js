@@ -78,6 +78,21 @@ export const api = {
   ocrBlob: (blob, lang) => sendBinary('/ocr', blob, { lang }),
   ocrPath: (path, lang) => send('POST', '/ocr', { path, lang }),
   capture: (text, todo, target) => send('POST', '/capture', { text, todo: Boolean(todo), target: target || '' }),
+  // Remote devices and cloud mirror (see docs/SYNC-PROTOCOL.md).
+  syncStatus: () => get('/sync/status'),
+  syncPair: () => send('POST', '/sync/pair', {}),
+  syncRevoke: (id) => send('DELETE', '/sync/device', undefined, { id }),
+  syncWebDAV: (name) => send('POST', '/sync/webdav', { name }),
+  syncRemotes: () => get('/sync/remotes'),
+  syncSetCloud: (cfg) => send('PUT', '/sync/cloud', cfg),
+  syncRunCloud: () => send('POST', '/sync/cloud/run', {}),
+  // Import (Markdown, text, HTML, Evernote .enex, Google Keep, Notion/Obsidian zip).
+  importFile: (blob, name, dir) => sendBinary('/import', blob, { name, dir }),
+  // AI Enhance (answered by the host: model access belongs to DSH).
+  aiSettings: () => get('/ai/settings'),
+  aiSaveSettings: (s) => send('PUT', '/ai/settings', s),
+  aiModels: () => get('/ai/models'),
+  aiEnhance: (text, title) => send('POST', '/ai/enhance', { text, title }),
   daily: (date) => send('POST', '/daily', { date: date || '' }),
   templates: () => get('/templates'),
   lockInfo: (folder) => get('/lock', { folder }),

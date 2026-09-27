@@ -148,6 +148,36 @@ test('aiWrite=false makes tools read-only', async () => {
   } finally { cfg.aiWrite = true }
 })
 
+test('import, sync admin and AI routes through the proxy', async () => {
+  const H = (extra) => browserHeaders({ 'sec-fetch-site': 'same-origin', origin: base, 'x-requested-with': 'dsh-note-keeper', ...extra })
+  // Import a Markdown file and an HTML page.
+  let r = await fetch(base + '/note-keeper/api/import?name=Hello.md&dir=Imported', { method: 'POST', headers: H({ 'content-type': 'application/octet-stream' }), body: '# Hello import' })
+  assert.equal(r.status, 200)
+  let j = await r.json()
+  assert.equal(j.Notes, 1)
+  r = await fetch(base + '/note-keeper/api/import?name=page.html&dir=Imported', { method: 'POST', headers: H({ 'content-type': 'application/octet-stream' }), body: '<html><head><title>Web Page</title></head><body><h1>Web Page</h1><p>Some <b>bold</b> text</p></body></html>' })
+  j = await r.json()
+  assert.equal(j.Notes, 1)
+  r = await fetch(base + '/note-keeper/api/tree', { headers: browserHeaders() })
+  const paths = (await r.json()).entries.map((e) => e.path)
+  assert.ok(paths.includes('Imported/Hello.md'))
+  assert.ok(paths.some((p) => p.startsWith('Imported/') && /Web Page/.test(p)))
+  // Import without CSRF markers is refused by the gate.
+  r = await fetch(base + '/note-keeper/api/import?name=x.md', { method: 'POST', headers: browserHeaders({ 'content-type': 'application/octet-stream' }), body: 'x' })
+  assert.equal(r.status, 403)
+  // Sync admin: status answers (sync disabled in this daemon: no NK_SYNC_ADDR).
+  r = await fetch(base + '/note-keeper/api/sync/status', { headers: browserHeaders() })
+  assert.equal(r.status, 200)
+  assert.equal((await r.json()).enabled, false)
+  // AI routes are host-handled; without an AI backend they answer 503, and
+  // mutations still need CSRF markers.
+  r = await fetch(base + '/note-keeper/api/ai/settings', { headers: browserHeaders() })
+  assert.equal(r.status, 503)
+  r = await fetch(base + '/note-keeper/api/ai/enhance', { method: 'POST', headers: browserHeaders({ 'content-type': 'application/json' }), body: '{"text":"x"}' })
+  assert.equal(r.status, 403)
+})
+
+
 test('pure helpers', () => {
   assert.equal(applyEdit('---\na: 1\n---\nbody\n', { mode: 'prepend', content: 'top' }), '---\na: 1\n---\ntop\nbody\n')
   assert.equal(applyEdit('a b a', { mode: 'replace_text', find: 'a', content: 'x', all: true }), 'x b x')

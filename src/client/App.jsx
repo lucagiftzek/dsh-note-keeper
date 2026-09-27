@@ -13,6 +13,9 @@ import { Editor } from './Editor.jsx'
 import { Recorder } from './Recorder.jsx'
 import { PaintEditor } from './Paint.jsx'
 import { GraphView } from './Graph.jsx'
+import { AiEnhanceButton } from './AiEnhance.jsx'
+import { ConnectDialog } from './Connect.jsx'
+import { ImportDialog } from './Import.jsx'
 
 const { useState, useEffect, useRef, useMemo, useCallback } = React
 
@@ -41,7 +44,8 @@ export function App() {
   const [status, setStatus] = useState(null)
   const [view, setView] = useState({ kind: 'home' })
   const [note, setNote] = useState(null) // { path, mtime, env, keyId, locked, text, saved, conflict, error }
-  const [mode, setModeState] = useState(() => load(MODE_KEY, 'split'))
+  // v0.2: live preview is the default; users who picked a mode keep it.
+  const [mode, setModeState] = useState(() => { const m = load(MODE_KEY, 'live'); return ['live', 'edit', 'split', 'preview'].includes(m) ? m : 'live' })
   const [saveState, setSaveState] = useState('')
   const [expanded, setExpanded] = useState(() => new Set(load(EXPANDED_KEY, [])))
   const [sideTab, setSideTab] = useState('files')
@@ -93,6 +97,7 @@ export function App() {
   const rows = useMemo(() => visibleRows(root, expanded), [root, expanded])
   const resolve = useMemo(() => makeResolver(paths, note ? note.path : ''), [paths, note && note.path])
   const render = useMemo(() => createRenderer(resolve), [resolve])
+  const tagList = useMemo(() => tags.map((t) => t.tag), [tags])
   const linkTargets = useMemo(() => paths.filter((p) => p.endsWith('.md')).map((p) => stem(p)).sort(), [paths])
   const lockedOf = (p) => lockedScopeOf(p, tree.locked)
 
@@ -160,7 +165,7 @@ export function App() {
       setSaveState('')
       reveal(path)
       store(LAST_KEY, path)
-      if (opts.edit) setMode('edit')
+      if (opts.edit && mode === 'preview') setMode('live')
     } catch (err) {
       if (err instanceof ApiError && err.status === 404 && e === undefined) say('Not found: ' + path, true)
       else say(errText(err), true)
@@ -603,7 +608,7 @@ export function App() {
       if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'n') { e.preventDefault(); newNote() }
       else if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'c') { e.preventDefault(); setDialog({ type: 'capture' }) }
       else if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'd') { e.preventDefault(); openDaily() }
-      else if (e.ctrlKey && e.key.toLowerCase() === 'e' && noteRef.current) { e.preventDefault(); setMode(mode === 'preview' ? 'split' : 'preview') }
+      else if (e.ctrlKey && e.key.toLowerCase() === 'e' && noteRef.current) { e.preventDefault(); setMode(mode === 'preview' ? 'live' : 'preview') }
       else if (!inField && e.key === '/') { e.preventDefault(); searchRef.current && searchRef.current.focus() }
     }
     window.addEventListener('keydown', onKey)
@@ -735,9 +740,15 @@ export function App() {
         {n.env ? <span className="nk-lockico" title="Encrypted"><Icon name="lock" /></span> : null}
         {noteType === 'audio' ? <button type="button" className="nk-btn" disabled={busy || n.locked} onClick={() => transcribeOpen()}>{busy ? 'Transcribing…' : 'Transcribe'}</button> : null}
         {noteType === 'drawing' ? <button type="button" className="nk-btn" disabled={n.locked} onClick={editDrawing}><Icon name="draw" /> Edit drawing</button> : null}
-        <IBtn icon="edit" title="Edit" active={mode === 'edit'} onClick={() => setMode('edit')} />
-        <IBtn icon="split" title="Split" active={mode === 'split'} onClick={() => setMode('split')} />
-        <IBtn icon="eye" title="Preview (Ctrl+E)" active={mode === 'preview'} onClick={() => setMode('preview')} />
+        {!n.locked ? (
+          <AiEnhanceButton title={stem(n.path)} getText={() => (noteRef.current ? noteRef.current.text : '')}
+            disabled={!!n.env || n.readOnly} disabledReason={n.env ? 'Encrypted notes are never sent to a model' : 'Read-only'}
+            onApply={(t) => setText(t)} say={say} />
+        ) : null}
+        <IBtn icon="edit" title="Live preview: links and tags render while you type" active={mode === 'live'} onClick={() => setMode('live')} />
+        <IBtn icon="code" title="Source (Markdown as text)" active={mode === 'edit'} onClick={() => setMode('edit')} />
+        <IBtn icon="split" title="Split: source + preview" active={mode === 'split'} onClick={() => setMode('split')} />
+        <IBtn icon="eye" title="Reading view (Ctrl+E)" active={mode === 'preview'} onClick={() => setMode('preview')} />
         <IBtn icon="more" title="More" onClick={(e) => setMenu({
           x: e.clientX, y: e.clientY, items: [
             !n.env && lockedOf(n.path) === null ? { label: 'Encrypt note…', onClick: encryptNote } : null,
@@ -769,6 +780,7 @@ export function App() {
         </div>
       ) : (
         <Editor text={n.text} setText={setText} mode={mode} render={render} linkTargets={linkTargets}
+          tagList={tagList} resolve={resolve} fileUrl={(p) => fileUrl(p)}
           onOpenLink={(t) => { const p = resolve(t); if (p) openPath(p); else setDialog({ type: 'confirm', title: 'Create note', message: <span>No note named <b>{t}</b> yet. Create it?</span>, okLabel: 'Create', onOk: async () => { setDialog(null); try { const np = await createNote(dirOf(t) || currentFolder(), baseOf(t), '# ' + baseOf(t) + '\n\n'); openPath(np, { edit: true }) } catch (e) { if (e.message !== 'cancelled') say(errText(e), true) } } }) }}
           onTag={(t) => openSearch('', t)} onUpload={onUpload} onSaveNow={() => saveNow()} />
       )}
@@ -826,6 +838,15 @@ export function App() {
     )
   })() : null
 
+  // The lock button does what the open note needs: encrypt a plain note,
+  // lock an unlocked encrypted note, otherwise lock every open key.
+  const lockAction = (() => {
+    const cur = note
+    if (view.kind === 'note' && cur && !cur.env && lockedOf(cur.path) === null) return { title: 'Encrypt this note…', run: encryptNote, active: false }
+    if (view.kind === 'note' && cur && cur.env && !cur.locked) return { title: 'Lock this note now (and all other unlocked notes)', run: lockAll, active: true }
+    return { title: 'Lock all encrypted notes now', run: lockAll, active: false }
+  })()
+
   const Home = (
     <section className="nk-main">
       <div className="nk-empty">
@@ -838,6 +859,8 @@ export function App() {
           <div className="nk-card" onClick={openDaily}><b>Daily note</b><span>Today's page (Ctrl+Alt+D)</span></div>
           <div className="nk-card" onClick={() => setDialog({ type: 'capture' })}><b>Quick capture</b><span>Drop a thought into the Inbox (Ctrl+Alt+C)</span></div>
           <div className="nk-card" onClick={() => setView({ kind: 'graph' })}><b>Graph</b><span>See how your notes connect</span></div>
+          <div className="nk-card" onClick={() => setDialog({ type: 'import' })}><b>Import</b><span>Obsidian, Notion, Evernote, Apple Notes, Google Keep, Markdown</span></div>
+          <div className="nk-card" onClick={() => setDialog({ type: 'connect' })}><b>Connect</b><span>Obsidian (desktop + mobile), WebDAV apps, Google Drive, iCloud</span></div>
         </div>
         {recent.length ? <div style={{ textAlign: 'left', marginTop: 22 }}><div className="nk-h">Recently edited</div>{recent.slice(0, 8).map((d) => <span key={d.path} className="nk-link" onClick={() => openPath(d.path)}>{d.title} <small style={{ color: 'var(--nk-fg3)' }}>{fmtAgo(d.mtime)}</small></span>)}</div> : null}
       </div>
@@ -895,7 +918,9 @@ export function App() {
         <IBtn icon="day" title="Daily note (Ctrl+Alt+D)" onClick={openDaily} />
         <IBtn icon="inbox" title="Quick capture (Ctrl+Alt+C)" onClick={() => setDialog({ type: 'capture' })} />
         <IBtn icon="graph" title="Graph view" active={view.kind === 'graph'} onClick={() => setView({ kind: 'graph', focus: n ? n.path : undefined })} />
-        <IBtn icon="lock" title="Lock all encrypted notes now" onClick={lockAll} />
+        <IBtn icon="import" title="Import notes (Obsidian, Notion, Evernote, Apple Notes, Keep, Markdown)" onClick={() => setDialog({ type: 'import' })} />
+        <IBtn icon="connect" title="Connect Obsidian, phones, WebDAV apps and cloud drives" onClick={() => setDialog({ type: 'connect' })} />
+        <IBtn icon="lock" title={lockAction.title} active={lockAction.active} onClick={lockAction.run} />
       </header>
       <div className={'nk-body' + (Info && view.kind === 'note' ? '' : ' nk-no-info')}>
         {Sidebar}
@@ -917,6 +942,9 @@ export function App() {
           <textarea className="nk-input" style={{ minHeight: 200, fontFamily: 'var(--nk-mono)' }} readOnly value={dialog.text || '(no text recognised)'} />
         </Modal>
       ) : null}
+      {dialog && dialog.type === 'connect' ? <ConnectDialog vaultPath={(status && status.vault) || tree.root} onClose={() => setDialog(null)} /> : null}
+      {dialog && dialog.type === 'import' ? <ImportDialog defaultDir="Imported" onClose={() => setDialog(null)}
+        onDone={(st) => { loadTree(); loadSide(); say('Imported ' + st.notes + ' notes and ' + st.attachments + ' attachments' + (st.errors.length ? ' (' + st.errors.length + ' errors)' : '') + '.', st.errors.length > 0) }} /> : null}
       {menu ? <Menu {...menu} onClose={() => setMenu(null)} /> : null}
       {toast ? <div className={'nk-toast' + (toast.err ? ' nk-errt' : '')} role="status">{toast.text}</div> : null}
     </div>

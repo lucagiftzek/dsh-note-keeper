@@ -6,6 +6,7 @@
  */
 import { build } from 'esbuild'
 import { readFileSync, statSync } from 'node:fs'
+import { stubLangHtml } from './esbuild-plugins.mjs'
 
 const ID = 'dsh-note-keeper'
 await build({
@@ -22,6 +23,7 @@ await build({
   external: ['react', 'react/jsx-runtime', 'react-dom'],
   define: { 'process.env.NODE_ENV': '"production"' },
   legalComments: 'linked',
+  plugins: [stubLangHtml],
   banner: { js: 'window.__ModuleLoader__.load({ id: ' + JSON.stringify(ID) + ', factory: (require) => {\nvar module = { exports: {} }; var exports = module.exports;' },
   footer: { js: 'return module.exports; } });' },
 })

@@ -8,7 +8,7 @@
 export const NK_CSS = `
 .nk-root{--nk-bg:var(--dsw-alias-bg-primary,#131110);--nk-bg2:var(--dsw-alias-bg-secondary,#1b1817);--nk-bg3:var(--dsw-alias-bg-tertiary,#2a2523);
   --nk-fg:var(--dsw-alias-label-primary,#f4f0ed);--nk-fg2:var(--dsw-alias-label-secondary,#c0b7b2);--nk-fg3:var(--dsw-alias-label-tertiary,#9a928e);
-  --nk-line:var(--dsw-alias-border-primary,#3a332f);--nk-accent:var(--tz-accent,#c1553a);--nk-accent2:var(--tz-accent-2,#5e9bd6);
+  --nk-line:var(--dsw-alias-border-primary,#3a332f);--nk-accent:var(--tz-accent,#c1553a);--nk-accent2:var(--tz-accent-2,#5e9bd6);--nk-accent-2:var(--nk-accent2);--nk-text:var(--tz-font-text,var(--dsw-font-sans,"Inter",system-ui,sans-serif));
   --nk-on-accent:var(--tz-on-accent,#fbf7f4);--nk-shadow:var(--tz-shadow-pop,6px 6px 0 rgba(0,0,0,.45));
   --nk-display:var(--tz-font-display,"Silkscreen",ui-monospace,monospace);--nk-mono:var(--tz-font-mono,ui-monospace,SFMono-Regular,Menlo,monospace);
   --nk-ok:var(--dsw-alias-state-success-primary,#4f9d69);--nk-err:var(--dsw-alias-state-error-primary,#e0685a);--nk-warn:var(--dsw-alias-state-warn-primary,#c8952f);
@@ -65,6 +65,36 @@ export const NK_CSS = `
 .nk-sep{width:1px;height:18px;background:var(--nk-line);margin:0 4px}
 .nk-editwrap{flex:1;min-height:0;display:grid;grid-template-columns:1fr}
 .nk-editwrap.nk-split{grid-template-columns:1fr 1fr}
+.nk-cm{min-height:0;height:100%;overflow:hidden;background:var(--nk-bg)}
+.nk-split .nk-cm{border-right:1px solid var(--nk-line)}
+.nk-cm .cm-editor{height:100%;background:var(--nk-bg);color:var(--nk-fg)}
+.nk-cm .cm-editor.cm-focused{outline:none}
+.nk-cm .cm-scroller{font-family:var(--nk-mono);font-size:13.5px;line-height:1.7;overflow:auto}
+.nk-cm .cm-content{padding:18px 22px 40vh;max-width:860px;caret-color:var(--nk-accent)}
+.nk-cm .cm-editor.nk-cm-live .cm-scroller{font-family:var(--nk-text);font-size:15px;line-height:1.7}
+.nk-cm .cm-line{padding:0}
+.nk-cm .cm-activeLine{background:color-mix(in srgb,var(--nk-fg) 4%,transparent)}
+.nk-cm .cm-selectionBackground,.nk-cm .cm-editor.cm-focused .cm-selectionBackground{background:color-mix(in srgb,var(--nk-accent) 28%,transparent) !important}
+.nk-cm .cm-cursor{border-left:2px solid var(--nk-accent)}
+.nk-cm .cm-placeholder{color:var(--nk-fg3)}
+.nk-cm .nk-cm-h{font-weight:700;color:var(--nk-fg)}
+.nk-cm .nk-cm-live .nk-cm-h1{font-size:1.75em;line-height:1.3;padding-top:.4em}
+.nk-cm .nk-cm-live .nk-cm-h2{font-size:1.45em;line-height:1.35;padding-top:.35em}
+.nk-cm .nk-cm-live .nk-cm-h3{font-size:1.2em}
+.nk-cm .nk-cm-live .nk-cm-h4,.nk-cm .nk-cm-live .nk-cm-h5,.nk-cm .nk-cm-live .nk-cm-h6{font-size:1.05em}
+.nk-cm-wikilink,.nk-cm-link{color:var(--nk-accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;cursor:pointer}
+.nk-cm-source .nk-cm-wikilink,.nk-cm-source .nk-cm-link{cursor:text}
+.nk-cm-wikilink.nk-unresolved{color:var(--nk-fg3);text-decoration-style:dashed}
+.nk-cm-wikilink-raw,.nk-cm-link-raw{color:var(--nk-accent)}
+.nk-cm-tag{color:var(--nk-accent-2);background:color-mix(in srgb,var(--nk-accent-2) 14%,transparent);padding:0 3px;cursor:pointer}
+.nk-cm-source .nk-cm-tag{cursor:text}
+.nk-cm-task{margin:0 6px 0 0;vertical-align:middle;accent-color:var(--nk-accent);cursor:pointer}
+.nk-cm-done{color:var(--nk-fg3);text-decoration:line-through}
+.nk-cm-embed-img{display:block;max-width:100%;max-height:320px;margin:6px 0;border:1px solid var(--nk-line);cursor:pointer}
+.nk-cm-embed-chip{font-size:.92em}
+.nk-cm .cm-tooltip-autocomplete{background:var(--nk-bg2);border:1px solid var(--nk-line);box-shadow:var(--nk-shadow);font-family:var(--nk-text)}
+.nk-cm .cm-tooltip-autocomplete ul li[aria-selected]{background:color-mix(in srgb,var(--nk-accent) 22%,transparent);color:var(--nk-fg)}
+.nk-toolbar-hint{margin-left:auto;font-size:11px;color:var(--nk-fg3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nk-textarea{width:100%;height:100%;resize:none;border:none;outline:none;background:var(--nk-bg);color:var(--nk-fg);font-family:var(--nk-mono);font-size:13.5px;line-height:1.65;padding:18px 22px;tab-size:2}
 .nk-split .nk-textarea{border-right:1px solid var(--nk-line)}
 .nk-root .nk-textarea:focus,.nk-root .nk-textarea:focus-visible{outline:none !important;box-shadow:none !important}
@@ -119,6 +149,39 @@ export const NK_CSS = `
 .nk-danger-box{border:2px solid var(--nk-err);background:color-mix(in srgb,var(--nk-err) 12%,transparent);padding:12px;font-weight:700;color:var(--nk-fg);display:flex;gap:10px;align-items:flex-start}
 .nk-danger-box .nk-bang{font-family:var(--nk-display);color:var(--nk-err);font-size:22px;line-height:1}
 .nk-field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--nk-fg2)}
+.nk-ai{position:relative;display:inline-flex;align-items:stretch;margin:0 4px 0 2px}
+.nk-ai-main{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--nk-accent);background:color-mix(in srgb,var(--nk-accent) 14%,transparent);color:var(--nk-fg);font-family:var(--nk-display);font-size:10px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.nk-ai-main:hover:not(:disabled){background:var(--nk-accent);color:var(--nk-on-accent);box-shadow:3px 3px 0 rgba(0,0,0,.4)}
+.nk-ai-main:disabled{opacity:.5;cursor:default}
+.nk-ai.nk-busy .nk-ai-main svg{animation:nk-spin 1.2s steps(8) infinite}
+.nk-ai-gear{position:absolute;right:-6px;bottom:-6px;width:16px;height:16px;padding:0;display:grid;place-items:center;border:1px solid var(--nk-line);background:var(--nk-bg2);color:var(--nk-fg2);cursor:pointer}
+.nk-ai-gear:hover{border-color:var(--nk-accent);color:var(--nk-accent)}
+@keyframes nk-spin{to{transform:rotate(360deg)}}
+.nk-seg{display:flex;gap:0;margin-bottom:12px;border:1px solid var(--nk-line);width:max-content;max-width:100%;overflow-x:auto}
+.nk-seg button{border:none;border-right:1px solid var(--nk-line);background:none;color:var(--nk-fg2);padding:6px 12px;cursor:pointer;font-family:var(--nk-display);font-size:10px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.nk-seg button:last-child{border-right:none}
+.nk-seg button.nk-on{background:var(--nk-accent);color:var(--nk-on-accent)}
+.nk-diff{max-height:52vh;overflow:auto;margin:0;padding:10px;background:var(--nk-bg);border:1px solid var(--nk-line);font-family:var(--nk-mono);font-size:12px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.nk-diff-add{background:color-mix(in srgb,var(--nk-ok) 18%,transparent)}
+.nk-diff-del{background:color-mix(in srgb,var(--nk-err) 16%,transparent);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--nk-err) 60%,transparent)}
+.nk-connect{display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.55}
+.nk-connect p{margin:0}
+.nk-connect code,.nk-creds code{font-family:var(--nk-mono);font-size:12px;background:var(--nk-bg3);padding:1px 5px;word-break:break-all}
+.nk-steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.nk-code{display:flex;align-items:center;gap:10px;margin-top:6px}
+.nk-code span{font-family:var(--nk-mono);font-size:22px;letter-spacing:.12em;padding:6px 12px;border:1px solid var(--nk-accent);background:var(--nk-bg);box-shadow:var(--nk-shadow)}
+.nk-code small{color:var(--nk-fg3)}
+.nk-row2{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.nk-creds{border:1px solid var(--nk-accent);padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--nk-bg)}
+.nk-creds div{display:flex;gap:8px;align-items:center}
+.nk-creds div span{width:90px;color:var(--nk-fg3);font-size:12px;flex:none}
+.nk-devices{width:100%;border-collapse:collapse;font-size:12.5px}
+.nk-devices th,.nk-devices td{border-bottom:1px solid var(--nk-line);padding:6px 8px;text-align:left;vertical-align:top}
+.nk-devices th{font-family:var(--nk-display);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--nk-fg3);font-weight:400}
+.nk-btn.nk-sm{padding:2px 8px;font-size:11px;height:auto}
+.nk-cloudstate{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--nk-fg2)}
+.nk-importprog{display:flex;flex-direction:column;gap:6px}
+.nk-importprog progress{width:100%;accent-color:var(--nk-accent)}
 .nk-check{display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer}
 .nk-meter{height:6px;background:var(--nk-bg3);border:1px solid var(--nk-line)} .nk-meter i{display:block;height:100%;background:var(--nk-accent);transition:width .08s}
 .nk-strength{height:4px;margin-top:2px;background:var(--nk-bg3)} .nk-strength i{display:block;height:100%}

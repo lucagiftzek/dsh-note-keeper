@@ -1,11 +1,27 @@
 /**
- * Markdown editor: source textarea with a formatting toolbar, live preview
- * (split / preview-only), clickable wikilinks, tags and task checkboxes,
- * paste/drag-and-drop attachments, and Obsidian-style [[ autocompletion.
+ * Markdown editor built on CodeMirror 6.
+ *
+ * Modes:
+ *   live    - Obsidian-style live preview: [[links]], [md](links) and #tags
+ *             render as clickable links/pills while typing (default);
+ *   edit    - plain source with syntax colouring (Ctrl/Cmd+click opens links);
+ *   split   - source + rendered preview side by side;
+ *   preview - rendered reading view.
+ * Plus: formatting toolbar, [[ and # autocompletion, list continuation,
+ * paste/drag-and-drop attachments.
  */
 import * as React from 'react'
+import { EditorState, Compartment } from '@codemirror/state'
+import { EditorView, keymap, placeholder as cmPlaceholder, drawSelection, highlightActiveLine } from '@codemirror/view'
+import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
+import { markdown, markdownLanguage, markdownKeymap } from '@codemirror/lang-markdown'
+import { syntaxHighlighting, HighlightStyle, indentUnit } from '@codemirror/language'
+import { autocompletion, completionKeymap } from '@codemirror/autocomplete'
+import { searchKeymap, highlightSelectionMatches } from '@codemirror/search'
+import { tags as t } from '@lezer/highlight'
 import { IBtn } from './ui.jsx'
 import { splitFrontmatter, toggleTask } from './markdown.js'
+import { livePreview, clickHandlers } from './cm/livepreview.js'
 
 const { useRef, useMemo, useState, useEffect, useCallback } = React
 
@@ -47,28 +63,93 @@ export function insertAt(text, pos, snippet) {
   return { text: before + pad + snippet + '\n' + text.slice(pos), pos: pos + pad.length + snippet.length + 1 }
 }
 
-export function Editor({ text, setText, mode, render, onOpenLink, onTag, onUpload, linkTargets, readOnly, onSaveNow }) {
-  const ta = useRef(null)
+
+/** Smallest single change turning a into b (keeps undo history meaningful). */
+export function minimalChange(a, b) {
+  let s = 0
+  const n = Math.min(a.length, b.length)
+  while (s < n && a.charCodeAt(s) === b.charCodeAt(s)) s++
+  let e = 0
+  while (e < n - s && a.charCodeAt(a.length - 1 - e) === b.charCodeAt(b.length - 1 - e)) e++
+  return { from: s, to: a.length - e, insert: b.slice(s, b.length - e) }
+}
+
+const highlight = HighlightStyle.define([
+  { tag: t.heading, fontWeight: '700', color: 'var(--nk-fg)' },
+  { tag: t.strong, fontWeight: '700' },
+  { tag: t.emphasis, fontStyle: 'italic' },
+  { tag: t.strikethrough, textDecoration: 'line-through' },
+  { tag: t.monospace, fontFamily: 'var(--nk-mono)', color: 'var(--nk-accent-2)' },
+  { tag: t.quote, color: 'var(--nk-fg2)' },
+  { tag: [t.processingInstruction, t.meta, t.contentSeparator], color: 'var(--nk-fg3)' },
+  { tag: t.url, color: 'var(--nk-fg3)' },
+  { tag: t.link, color: 'var(--nk-accent)' },
+])
+
+/** Autocomplete: [[note titles]] and #tags. */
+function completions(getLists) {
+  return (ctx) => {
+    const { linkTargets = [], tagList = [] } = getLists()
+    const link = ctx.matchBefore(/\[\[[^\]|#\n]*$/)
+    if (link) {
+      const q = link.text.slice(2).toLowerCase()
+      const after = ctx.state.doc.sliceString(ctx.pos, ctx.pos + 2)
+      const options = linkTargets.filter((x) => x.toLowerCase().includes(q)).slice(0, 50).map((label) => ({
+        label, type: 'text', apply: (view, c, from, to) => {
+          const ins = label + (after === ']]' ? '' : ']]')
+          view.dispatch({ changes: { from, to, insert: ins }, selection: { anchor: from + label.length + 2 } })
+        },
+      }))
+      return { from: link.from + 2, options, filter: false }
+    }
+    const tag = ctx.matchBefore(/(?:^|\s)#[\p{L}\p{N}_/-]*$/u)
+    if (tag && tagList.length) {
+      const hash = tag.text.lastIndexOf('#')
+      const q = tag.text.slice(hash + 1).toLowerCase()
+      const options = tagList.filter((x) => x.toLowerCase().startsWith(q)).slice(0, 50).map((label) => ({ label, type: 'keyword' }))
+      return options.length ? { from: tag.from + hash + 1, options, filter: false } : null
+    }
+    return null
+  }
+}
+
+export function Editor({ text, setText, mode, render, onOpenLink, onTag, onUpload, linkTargets, tagList, readOnly, onSaveNow, resolve, fileUrl }) {
+  const host = useRef(null)
+  const viewRef = useRef(null)
   const pv = useRef(null)
   const [drag, setDrag] = useState(false)
-  const [suggest, setSuggest] = useState(null) // { q, at, items, i }
-  const html = useMemo(() => (mode === 'edit' ? '' : render(text)), [text, mode, render])
+  const html = useMemo(() => (mode === 'edit' || mode === 'live' ? '' : render(text)), [text, mode, render])
   const props = useMemo(() => splitFrontmatter(text).props, [text])
+  const showSource = mode !== 'preview'
 
-  const fmt = (kind) => {
-    const el = ta.current
-    if (!el) return
-    const r = applyFormat(text, el.selectionStart, el.selectionEnd, kind)
-    setText(r.text)
-    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(r.start, r.end) })
+  // Everything the CM extensions read lives in a ref so the editor is built once.
+  const live = useRef({})
+  live.current = {
+    live: mode === 'live',
+    resolve: resolve || (() => null),
+    fileUrl: fileUrl || ((p) => p),
+    linkTargets, tagList, setText, onOpenLink, onTag, onSaveNow,
   }
+  const modeComp = useRef(new Compartment())
+  const roComp = useRef(new Compartment())
+
+  const fmt = useCallback((kind) => {
+    const view = viewRef.current
+    if (!view) return
+    const doc = view.state.doc.toString()
+    const sel = view.state.selection.main
+    const r = applyFormat(doc, sel.from, sel.to, kind)
+    view.dispatch({ changes: minimalChange(doc, r.text), selection: { anchor: r.start, head: r.end }, scrollIntoView: true })
+    view.focus()
+  }, [])
 
   const insert = useCallback((snippet) => {
-    const el = ta.current
-    const pos = el ? el.selectionEnd : text.length
-    const r = insertAt(text, pos, snippet)
-    setText(r.text)
-    requestAnimationFrame(() => { if (el) { el.focus(); el.setSelectionRange(r.pos, r.pos) } })
+    const view = viewRef.current
+    if (!view) { setText(insertAt(text, text.length, snippet).text); return }
+    const doc = view.state.doc.toString()
+    const r = insertAt(doc, view.state.selection.main.head, snippet)
+    view.dispatch({ changes: minimalChange(doc, r.text), selection: { anchor: r.pos }, scrollIntoView: true })
+    view.focus()
   }, [text, setText])
 
   const uploadFiles = async (files) => {
@@ -81,6 +162,74 @@ export function Editor({ text, setText, mode, render, onOpenLink, onTag, onUploa
     }
     if (snippets.length) insert(snippets.join('\n'))
   }
+  const uploadRef = useRef(uploadFiles)
+  uploadRef.current = uploadFiles
+
+  // Build the editor once per mount of the source pane.
+  useEffect(() => {
+    if (!showSource || !host.current) return undefined
+    const L = () => live.current
+    const view = new EditorView({
+      parent: host.current,
+      state: EditorState.create({
+        doc: text,
+        extensions: [
+          history(),
+          drawSelection(),
+          highlightActiveLine(),
+          highlightSelectionMatches(),
+          EditorView.lineWrapping,
+          indentUnit.of('  '),
+          markdown({ base: markdownLanguage, addKeymap: false, completeHTMLTags: false }),
+          syntaxHighlighting(highlight),
+          autocompletion({ override: [completions(() => L())], icons: false }),
+          keymap.of([
+            { key: 'Mod-b', run: () => { fmt('bold'); return true } },
+            { key: 'Mod-i', run: () => { fmt('italic'); return true } },
+            { key: 'Mod-k', run: () => { fmt('link'); return true } },
+            { key: 'Mod-s', run: () => { L().onSaveNow && L().onSaveNow(); return true } },
+            ...markdownKeymap, ...completionKeymap, ...searchKeymap, ...historyKeymap, indentWithTab, ...defaultKeymap,
+          ]),
+          cmPlaceholder('Start writing… [[ links a note, # adds a tag'),
+          modeComp.current.of(EditorView.editorAttributes.of({ class: mode === 'live' ? 'nk-cm-live' : 'nk-cm-source' })),
+          roComp.current.of([EditorState.readOnly.of(!!readOnly), EditorView.editable.of(!readOnly)]),
+          livePreview(() => L()),
+          clickHandlers(() => L(), {
+            onOpenLink: (x) => L().onOpenLink && L().onOpenLink(x),
+            onTag: (x) => L().onTag && L().onTag(x),
+            onHref: (href) => { if (/^https?:|^mailto:/i.test(href)) window.open(href, '_blank', 'noopener,noreferrer') },
+          }),
+          EditorView.domEventHandlers({
+            paste(e) { if (e.clipboardData && e.clipboardData.files.length) { e.preventDefault(); uploadRef.current(e.clipboardData.files); return true } return false },
+          }),
+          EditorView.updateListener.of((u) => { if (u.docChanged) L().setText(u.state.doc.toString()) }),
+          EditorView.contentAttributes.of({ 'aria-label': 'Note editor', spellcheck: 'true' }),
+        ],
+      }),
+    })
+    view.dom.nkView = view // test/debug handle
+    viewRef.current = view
+    if (!readOnly) view.focus()
+    return () => { view.destroy(); viewRef.current = null }
+  }, [showSource])
+
+  // External text changes (task toggles in preview, AI Enhance, conflict reloads).
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view) return
+    const cur = view.state.doc.toString()
+    if (cur !== text) view.dispatch({ changes: minimalChange(cur, text) })
+  }, [text])
+
+  // Mode / read-only switches reconfigure without rebuilding the editor.
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view) return
+    view.dispatch({ effects: [
+      modeComp.current.reconfigure(EditorView.editorAttributes.of({ class: mode === 'live' ? 'nk-cm-live' : 'nk-cm-source' })),
+      roComp.current.reconfigure([EditorState.readOnly.of(!!readOnly), EditorView.editable.of(!readOnly)]),
+    ] })
+  }, [mode, readOnly])
 
   // Clicks inside the rendered preview: links, tags, task boxes.
   const onPreviewClick = (e) => {
@@ -97,74 +246,9 @@ export function Editor({ text, setText, mode, render, onOpenLink, onTag, onUploa
     if (a.dataset.target) { e.preventDefault(); onOpenLink(a.dataset.target) } else if (a.dataset.tag) { e.preventDefault(); onTag(a.dataset.tag) }
   }
 
-  // [[ autocompletion.
-  const onInput = (e) => {
-    const v = e.target.value
-    setText(v)
-    const pos = e.target.selectionStart
-    const lineBefore = v.slice(v.lastIndexOf('\n', pos - 1) + 1, pos)
-    const m = /\[\[([^\]|#\n]*)$/.exec(lineBefore)
-    if (m && linkTargets) {
-      const q = m[1].toLowerCase()
-      const items = linkTargets.filter((t) => t.toLowerCase().includes(q)).slice(0, 8)
-      setSuggest(items.length ? { at: pos - m[1].length, q: m[1], items, i: 0 } : null)
-    } else if (suggest) setSuggest(null)
-  }
-  const accept = (item) => {
-    const el = ta.current
-    const pos = el.selectionStart
-    const next = text.slice(0, suggest.at) + item + ']]' + text.slice(pos).replace(/^\]\]/, '')
-    setText(next)
-    setSuggest(null)
-    const c = suggest.at + item.length + 2
-    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(c, c) })
-  }
-  const onKeyDown = (e) => {
-    if (suggest) {
-      if (e.key === 'ArrowDown') { e.preventDefault(); setSuggest({ ...suggest, i: (suggest.i + 1) % suggest.items.length }); return }
-      if (e.key === 'ArrowUp') { e.preventDefault(); setSuggest({ ...suggest, i: (suggest.i + suggest.items.length - 1) % suggest.items.length }); return }
-      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); accept(suggest.items[suggest.i]); return }
-      if (e.key === 'Escape') { setSuggest(null); return }
-    }
-    const mod = e.ctrlKey || e.metaKey
-    if (mod && e.key.toLowerCase() === 'b') { e.preventDefault(); fmt('bold') }
-    else if (mod && e.key.toLowerCase() === 'i') { e.preventDefault(); fmt('italic') }
-    else if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); onSaveNow && onSaveNow() }
-    else if (e.key === 'Tab' && !mod) {
-      // Indent/outdent list items instead of leaving the textarea.
-      e.preventDefault()
-      const el = e.target
-      const s = el.selectionStart
-      const ls = text.lastIndexOf('\n', s - 1) + 1
-      if (e.shiftKey) {
-        if (text.startsWith('  ', ls)) { setText(text.slice(0, ls) + text.slice(ls + 2)); requestAnimationFrame(() => el.setSelectionRange(Math.max(ls, s - 2), Math.max(ls, s - 2))) }
-      } else {
-        setText(text.slice(0, ls) + '  ' + text.slice(ls))
-        requestAnimationFrame(() => el.setSelectionRange(s + 2, s + 2))
-      }
-    } else if (e.key === 'Enter' && !mod) {
-      // Continue lists and tasks.
-      const el = e.target
-      const s = el.selectionStart
-      const ls = text.lastIndexOf('\n', s - 1) + 1
-      const line = text.slice(ls, s)
-      const m = /^(\s*)([-*+]|\d+\.)(\s+\[[ xX]\])?\s+(.*)$/.exec(line)
-      if (m) {
-        e.preventDefault()
-        if (!m[4]) { setText(text.slice(0, ls) + text.slice(s)); requestAnimationFrame(() => el.setSelectionRange(ls, ls)); return }
-        const bullet = /\d+\./.test(m[2]) ? (parseInt(m[2], 10) + 1) + '.' : m[2]
-        const ins = '\n' + m[1] + bullet + (m[3] ? ' [ ]' : '') + ' '
-        setText(text.slice(0, s) + ins + text.slice(el.selectionEnd))
-        requestAnimationFrame(() => el.setSelectionRange(s + ins.length, s + ins.length))
-      }
-    }
-  }
-
-  useEffect(() => { if (mode !== 'preview' && ta.current && !readOnly) ta.current.focus() }, [mode])
-
   return (
     <>
-      {mode !== 'preview' && !readOnly ? (
+      {showSource && !readOnly ? (
         <div className="nk-toolbar" role="toolbar" aria-label="Formatting">
           <IBtn icon="bold" title="Bold (Ctrl+B)" onClick={() => fmt('bold')} />
           <IBtn icon="italic" title="Italic (Ctrl+I)" onClick={() => fmt('italic')} />
@@ -175,34 +259,21 @@ export function Editor({ text, setText, mode, render, onOpenLink, onTag, onUploa
           <IBtn icon="quote" title="Quote / callout" onClick={() => fmt('quote')} />
           <IBtn icon="table" title="Table" onClick={() => fmt('table')} />
           <IBtn icon="code" title="Code" onClick={() => fmt('code')} />
-          <IBtn icon="link" title="Link to note [[ ]]" onClick={() => fmt('link')} />
+          <IBtn icon="link" title="Link to note [[ ]] (Ctrl+K)" onClick={() => fmt('link')} />
           <span className="nk-sep" />
           <label className="nk-ibtn" title="Attach files" aria-label="Attach files" style={{ cursor: 'pointer' }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3"><path d="M11 5l-5.5 5.5a1.5 1.5 0 0 0 2 2L13 7a3 3 0 0 0-4-4L3.5 8.5a4.5 4.5 0 0 0 6 6L14 10" /></svg>
             <input type="file" multiple hidden onChange={(e) => { uploadFiles(e.target.files); e.target.value = '' }} />
           </label>
+          <span className="nk-toolbar-hint">{mode === 'live' ? 'Live preview: click a link or tag to open it' : 'Source: Ctrl/Cmd+click opens links'}</span>
         </div>
       ) : null}
       <div className={'nk-editwrap' + (mode === 'split' ? ' nk-split' : '') + (drag ? ' nk-dropzone' : '')}
         onDragOver={(e) => { if (!readOnly && e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDrag(true) } }}
         onDragLeave={() => setDrag(false)}
         onDrop={(e) => { if (readOnly || !e.dataTransfer.files.length) return; e.preventDefault(); setDrag(false); uploadFiles(e.dataTransfer.files) }}>
-        {mode !== 'preview' ? (
-          <div style={{ position: 'relative', minHeight: 0 }}>
-            <textarea ref={ta} className="nk-textarea" value={text} onChange={onInput} onKeyDown={onKeyDown} spellCheck
-              readOnly={readOnly} aria-label="Note source"
-              onPaste={(e) => { if (e.clipboardData && e.clipboardData.files.length) { e.preventDefault(); uploadFiles(e.clipboardData.files) } }} />
-            {suggest ? (
-              <div className="nk-menu" style={{ position: 'absolute', left: 20, bottom: 12, top: 'auto' }} role="listbox">
-                {suggest.items.map((it, i) => (
-                  <button key={it} type="button" style={i === suggest.i ? { background: 'color-mix(in srgb,var(--nk-accent) 16%,transparent)' } : undefined}
-                    onMouseDown={(e) => { e.preventDefault(); accept(it) }}>{it}</button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-        {mode !== 'edit' ? (
+        {showSource ? <div className="nk-cm" ref={host} /> : null}
+        {mode === 'split' || mode === 'preview' ? (
           <div className="nk-preview" ref={pv} onClick={onPreviewClick}>
             {props && Object.keys(props).length ? (
               <div className="nk-props">{Object.entries(props).filter(([k]) => !k.startsWith('nk-')).map(([k, v]) => (

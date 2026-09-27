@@ -47,6 +47,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/lucagiftzek/dsh-note-keeper/server/internal/devsync"
 	"github.com/lucagiftzek/dsh-note-keeper/server/internal/index"
 	"github.com/lucagiftzek/dsh-note-keeper/server/internal/note"
 	"github.com/lucagiftzek/dsh-note-keeper/server/internal/vault"
@@ -72,6 +73,9 @@ type Config struct {
 	AttachFolder string        // e.g. "attachments"
 	TemplatesDir string        // e.g. "Templates"
 	Version      string
+
+	Sync          *devsync.Service // remote device sync (nil disables the /sync admin routes)
+	SyncListening string           // address the public sync listener is bound to ("" = off)
 }
 
 // Server wires the vault, index and watcher into HTTP handlers.
@@ -136,6 +140,16 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /lock", s.setLock)
 	mux.HandleFunc("DELETE /lock", s.delLock)
 	mux.HandleFunc("GET /events", s.events)
+	// Remote devices (local UI only: this handler sits behind X-NK-Secret and
+	// the host's session gate; the public sync API is a separate listener).
+	mux.HandleFunc("GET /sync/status", s.syncStatus)
+	mux.HandleFunc("POST /sync/pair", s.syncPair)
+	mux.HandleFunc("DELETE /sync/device", s.syncRevoke)
+	mux.HandleFunc("POST /sync/webdav", s.syncWebDAV)
+	mux.HandleFunc("GET /sync/remotes", s.syncRemotes)
+	mux.HandleFunc("PUT /sync/cloud", s.syncSetCloud)
+	mux.HandleFunc("POST /sync/cloud/run", s.syncRunCloud)
+	mux.HandleFunc("POST /import", s.importFile)
 	return s.auth(mux)
 }
 

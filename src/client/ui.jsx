@@ -44,6 +44,8 @@ const P = {
   quote: 'M2.5 4h4v4h-4z M2.5 8c0 2-1 3-1 4 M9.5 4h4v4h-4z M9.5 8c0 2-1 3-1 4',
   ocr: 'M1.5 5V1.5H5 M11 1.5h3.5V5 M14.5 11v3.5H11 M5 14.5H1.5V11 M4.5 5.5h7 M8 5.5v5',
   refresh: 'M13 3v3.5H9.5 M13 6.5A5.5 5.5 0 1 0 13.5 10',
+  import: 'M8 1.5v8 M4.5 6.5L8 10l3.5-3.5 M2 10.5v4h12v-4',
+  connect: 'M1.5 5.5h4v5h-4z M10.5 5.5h4v5h-4z M5.5 8h5 M8 3v2 M8 11v2',
   template: 'M2 2h12v3H2z M2 7h5v7H2z M9 7h5v3H9z M9 12h5v2H9z',
 }
 
