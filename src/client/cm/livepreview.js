@@ -39,6 +39,48 @@ class CheckboxWidget extends WidgetType {
   ignoreEvent() { return false }
 }
 
+class BulletWidget extends WidgetType {
+  eq() { return true }
+  toDOM() {
+    const el = document.createElement('span')
+    el.className = 'nk-cm-bullet'
+    el.textContent = '•'
+    return el
+  }
+}
+
+class PropsWidget extends WidgetType {
+  constructor(text) { super(); this.text = text }
+  eq(o) { return o.text === this.text }
+  toDOM() {
+    const box = document.createElement('div')
+    box.className = 'nk-cm-props'
+    for (const line of this.text.split('\n')) {
+      const m = /^([^:#\s][^:]*):\s*(.*)$/.exec(line)
+      if (!m || m[1].startsWith('nk-')) continue
+      const row = document.createElement('span')
+      const k = document.createElement('b')
+      k.textContent = m[1]
+      row.appendChild(k)
+      row.appendChild(document.createTextNode(' ' + m[2].replace(/^\[|\]$/g, '').replace(/"/g, '')))
+      box.appendChild(row)
+    }
+    if (!box.childNodes.length) box.textContent = 'properties'
+    return box
+  }
+  ignoreEvent() { return false }
+}
+
+/** End offset of a leading YAML frontmatter block, or -1. */
+export function frontmatterEnd(doc) {
+  if (doc.lines < 2 || doc.line(1).text !== '---') return -1
+  for (let i = 2; i <= Math.min(doc.lines, 400); i++) {
+    const t = doc.line(i).text
+    if (t === '---' || t === '...') return doc.line(i).to
+  }
+  return -1
+}
+
 class EmbedWidget extends WidgetType {
   constructor(target, url, label) { super(); this.target = target; this.url = url; this.label = label }
   eq(o) { return o.target === this.target && o.url === this.url }
@@ -86,6 +128,18 @@ export function buildDecorations(view, opts) {
   const hide = (a, b) => { if (b > a) decos.push(Decoration.replace({}).range(a, b)) }
   const mark = (a, b, cls, attrs) => { if (b > a) decos.push(Decoration.mark({ class: cls, attributes: attrs }).range(a, b)) }
 
+  // Frontmatter is YAML, not Markdown (lezer would read "key: v" + "---" as a
+  // setext heading): muted in source, a compact property strip in live
+  // preview while the cursor is elsewhere.
+  const fmEnd = frontmatterEnd(state.doc)
+  if (fmEnd > 0) {
+    if (live && !touches(state, 0, fmEnd)) {
+      decos.push(Decoration.replace({ widget: new PropsWidget(state.doc.sliceString(4, Math.max(4, fmEnd - 4))), block: true }).range(0, fmEnd))
+    } else {
+      for (let i = 1; i <= state.doc.lineAt(fmEnd).number; i++) decos.push(Decoration.line({ class: 'nk-cm-fm' }).range(state.doc.line(i).from))
+    }
+  }
+
   for (const { from, to } of view.visibleRanges) {
     const code = codeRanges(state, from, to)
     // --- syntax-tree driven constructs -----------------------------------
@@ -93,6 +147,7 @@ export function buildDecorations(view, opts) {
       from, to,
       enter(n) {
         const name = n.name
+        if (fmEnd > 0 && n.from < fmEnd) return n.to > fmEnd ? undefined : false
         if (/^ATXHeading[1-6]$/.test(name)) {
           const line = state.doc.lineAt(n.from)
           decos.push(Decoration.line({ class: 'nk-cm-h nk-cm-h' + name.slice(-1) }).range(line.from))
@@ -124,6 +179,16 @@ export function buildDecorations(view, opts) {
             mark(n.from, n.to, 'nk-cm-link-raw')
           }
           return false
+        }
+        if (name === 'ListMark') {
+          const mk = state.doc.sliceString(n.from, n.to)
+          if (!/^[-*+]$/.test(mk)) return
+          const line = state.doc.lineAt(n.from)
+          if (touches(state, line.from, line.to)) return
+          const rest = state.doc.sliceString(n.to, Math.min(line.to, n.to + 5))
+          if (/^ \[[ xX]\]/.test(rest)) hide(n.from, n.to + 1) // task: the checkbox is the bullet
+          else decos.push(Decoration.replace({ widget: new BulletWidget() }).range(n.from, n.to))
+          return
         }
         if (name === 'TaskMarker') {
           if (touches(state, n.from, n.to)) return
@@ -177,7 +242,7 @@ export function buildDecorations(view, opts) {
     for (let m; (m = TAG_RE.exec(text));) {
       const a = from + m.index + m[1].length
       const b = a + m[2].length
-      if (inRanges(code, a, b) || inRanges(linkSpans, a, b)) continue
+      if (inRanges(code, a, b) || inRanges(linkSpans, a, b) || (fmEnd > 0 && a < fmEnd)) continue
       const line = state.doc.lineAt(a)
       if (a === line.from && /^#{1,6}\s/.test(line.text)) continue // heading mark, not a tag
       mark(a, b, 'nk-cm-tag', { 'data-tag': m[2].slice(1) })

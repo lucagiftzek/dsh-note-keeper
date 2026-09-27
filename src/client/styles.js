@@ -94,6 +94,10 @@ export const NK_CSS = `
 .nk-cm-embed-chip{font-size:.92em}
 .nk-cm .cm-tooltip-autocomplete{background:var(--nk-bg2);border:1px solid var(--nk-line);box-shadow:var(--nk-shadow);font-family:var(--nk-text)}
 .nk-cm .cm-tooltip-autocomplete ul li[aria-selected]{background:color-mix(in srgb,var(--nk-accent) 22%,transparent);color:var(--nk-fg)}
+.nk-cm .nk-cm-fm,.nk-cm .nk-cm-fm *{font-family:var(--nk-mono) !important;font-size:12px !important;font-weight:400 !important;color:var(--nk-fg3) !important}
+.nk-cm-props{display:flex;flex-wrap:wrap;gap:4px 14px;padding:6px 10px;margin:0 0 10px;border:1px solid var(--nk-line);background:var(--nk-bg2);font-family:var(--nk-mono);font-size:11.5px;color:var(--nk-fg2);cursor:text}
+.nk-cm-props b{font-weight:400;color:var(--nk-fg3)}
+.nk-cm-bullet{display:inline-block;width:1ch;color:var(--nk-accent);font-weight:700}
 .nk-toolbar-hint{margin-left:auto;font-size:11px;color:var(--nk-fg3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nk-textarea{width:100%;height:100%;resize:none;border:none;outline:none;background:var(--nk-bg);color:var(--nk-fg);font-family:var(--nk-mono);font-size:13.5px;line-height:1.65;padding:18px 22px;tab-size:2}
 .nk-split .nk-textarea{border-right:1px solid var(--nk-line)}
