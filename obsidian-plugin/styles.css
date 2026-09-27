@@ -1,0 +1,42 @@
+/* Note Keeper Sync — minimal styling, uses Obsidian's own CSS variables so
+ * it matches the active theme (light/dark, custom themes) automatically. */
+
+.nk-sync-status {
+	cursor: default;
+}
+
+.nk-sync-log {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: var(--font-ui-small);
+}
+
+.nk-sync-log th,
+.nk-sync-log td {
+	text-align: left;
+	padding: 2px 8px 2px 0;
+	border-bottom: 1px solid var(--background-modifier-border);
+	vertical-align: top;
+}
+
+.nk-sync-log-action {
+	font-weight: var(--font-medium);
+	white-space: nowrap;
+}
+
+.nk-sync-log-error {
+	color: var(--text-error);
+}
+
+.nk-sync-log-conflict {
+	color: var(--text-warning);
+}
+
+.nk-sync-log-push,
+.nk-sync-log-pull {
+	color: var(--text-success);
+}
+
+.nk-sync-log-skip {
+	color: var(--text-muted);
+}

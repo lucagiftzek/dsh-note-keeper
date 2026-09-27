@@ -73,7 +73,7 @@ function ObsidianTab({ st, onChange }) {
     <div className="nk-connect">
       <p>Two-way, real-time sync between this vault and Obsidian on any desktop, iPhone, iPad or Android phone, through the <b>Note Keeper Sync</b> Obsidian plugin. Edits on either side appear on the other within seconds; conflicts keep both versions; deletes go to the trash; encrypted notes stay encrypted.</p>
       <ol className="nk-steps">
-        <li><b>Install the plugin in Obsidian.</b> Install <i>BRAT</i> from Community plugins, then <i>BRAT → Add beta plugin</i> → <code>{REPO}</code> <Copy text={REPO} />. (Manual install: copy <code>main.js</code>, <code>manifest.json</code>, <code>styles.css</code> from the <a href={'https://github.com/' + REPO + '/tree/main/obsidian-plugin'} target="_blank" rel="noreferrer">obsidian-plugin</a> folder into <code>.obsidian/plugins/note-keeper-sync/</code>.)</li>
+        <li><b>Install the plugin in Obsidian.</b> Install <i>BRAT</i> from Community plugins, then <i>BRAT → Add beta plugin</i> → <code>{REPO}</code> <Copy text={REPO} />. (Manual install: download <code>main.js</code>, <code>manifest.json</code> and <code>styles.css</code> from the <a href={'https://github.com/' + REPO + '/releases/latest'} target="_blank" rel="noreferrer">latest release</a> into <code>.obsidian/plugins/note-keeper-sync/</code>, then enable it under Community plugins.)</li>
         <li><b>Server URL</b> in the plugin settings: <code>{url}</code> <Copy text={url} /></li>
         <li><b>Pairing code</b> (single use, 10 minutes):
           {pair && left > 0 ? (

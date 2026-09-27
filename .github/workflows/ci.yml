@@ -27,5 +27,8 @@ jobs:
           cd .. && npm run check
       - run: npm run build
       - run: npm test
+      - name: Obsidian plugin (type-check, build, unit + integration against the daemon)
+        working-directory: obsidian-plugin
+        run: npm ci && npm run build && npm test
       - name: Client bundle is reproducible from source
         run: git diff --stat --exit-code lib/client.js || echo "::warning::lib/client.js differs from a fresh build"

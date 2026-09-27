@@ -1,0 +1,10 @@
+{
+	"id": "note-keeper-sync",
+	"name": "Note Keeper Sync",
+	"version": "0.2.0",
+	"minAppVersion": "1.4.0",
+	"description": "Two-way sync between your vault and a Note Keeper server: pairing, HMAC-signed requests, three-way merge, conflict copies, and encrypted-folder awareness. Works on desktop and mobile.",
+	"author": "Loukas \"Luca\" Tzekos",
+	"authorUrl": "https://tzekos.eu",
+	"isDesktopOnly": false
+}
