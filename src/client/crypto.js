@@ -83,7 +83,49 @@ export async function sealBlob(key, bytes) {
 
 export async function openBlob(key, sealed) {
   if (dec.decode(sealed.subarray(0, 4)) !== 'NKE1') throw new Error('not a Note Keeper encrypted file')
-  return decryptBytes(key, sealed.subarray(4, 16), sealed.subarray(16))
+  const plain = await decryptBytes(key, sealed.subarray(4, 16), sealed.subarray(16))
+  return splitBlobMeta(plain).bytes
+}
+
+/** Like openBlob, but also returns the metadata embedded at sealing time. */
+export async function openBlobNamed(key, sealed) {
+  if (dec.decode(sealed.subarray(0, 4)) !== 'NKE1') throw new Error('not a Note Keeper encrypted file')
+  const plain = await decryptBytes(key, sealed.subarray(4, 16), sealed.subarray(16))
+  return splitBlobMeta(plain)
+}
+
+/**
+ * Opaque sealed uploads keep the original name out of the wire and the vault:
+ * the plaintext carries an "NKM1" | u32le header length | JSON header
+ * (name, size, type) in front of the file bytes, all inside the ciphertext.
+ * splitBlobMeta peels it back; plain blobs without the header pass through.
+ */
+export function splitBlobMeta(plain) {
+  if (plain.length < 8 || dec.decode(plain.subarray(0, 4)) !== 'NKM1') return { bytes: plain, meta: null }
+  const len = new DataView(plain.buffer, plain.byteOffset + 4, 4).getUint32(0, true)
+  if (len > plain.length - 8) return { bytes: plain, meta: null } // corrupt: treat as raw
+  try {
+    const meta = JSON.parse(dec.decode(plain.subarray(8, 8 + len)) || '{}')
+    return { bytes: plain.subarray(8 + len), meta: meta && typeof meta === 'object' ? meta : null }
+  } catch {
+    return { bytes: plain, meta: null }
+  }
+}
+
+/** Seal with an NKM1 metadata header (see splitBlobMeta). */
+export async function sealBlobMeta(key, bytes, meta) {
+  const head = enc.encode(JSON.stringify(meta || {}))
+  const plain = new Uint8Array(8 + head.length + bytes.length)
+  plain.set(enc.encode('NKM1'), 0)
+  new DataView(plain.buffer).setUint32(4, head.length, true)
+  plain.set(head, 8)
+  plain.set(bytes, 8 + head.length)
+  return sealBlob(key, plain)
+}
+
+/** Random, content-free storage name for sealed uploads (enc-<18 hex>). */
+export function opaqueName() {
+  return 'enc-' + Array.from(randomBytes(9)).map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 const wrap = (s, n = 76) => s.replace(new RegExp('(.{' + n + '})', 'g'), '$1\n').trim()

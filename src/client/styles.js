@@ -1,6 +1,6 @@
 /**
- * Note Keeper styles, built only from the tzekos.eu design tokens that
- * dsh-tzekos-theme publishes (with fallbacks, so the plugin also renders on a
+ * Note Keeper styles, built only from the design tokens that
+ * a DSH theme plugin publishes (with fallbacks, so the plugin also renders on a
  * stock DSH theme): warm near-black / paper surfaces through the dsw alias
  * ramp (dark + light modes for free), clay accent, steel-blue secondary,
  * square corners, 1px lines, hard offset shadows, Silkscreen display labels.

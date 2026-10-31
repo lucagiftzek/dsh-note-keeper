@@ -67,7 +67,7 @@ snapshot rather than a live feature tracker.
   household).** `note.Fold` in `note.go` folds Greek and Latin diacritics
   (Καλημέρα ≈ καλημερα) so search and tag matching work the same regardless
   of accents or case — a refinement neither Obsidian nor Logseq ship out of
-  the box, driven by the estate's actual bilingual (Greek/English/Italian)
+  the box, driven by the author's actual bilingual (Greek/English/Italian)
   usage.
 - **Zero-knowledge end-to-end encryption (Standard Notes' core promise,
   Joplin's E2E sync).** `src/client/crypto.js` follows the same shape as
@@ -86,7 +86,7 @@ snapshot rather than a live feature tracker.
 - **Built-in audio transcription (Apple's on-device dictation, adapted to a
   proper note format).** `src/client/Recorder.jsx` pins the transcription
   language explicitly (Greek and English first-class, several others
-  offered) instead of relying on auto-detect, because the estate's own
+  offered) instead of relying on auto-detect, because the author's own
   measurements found pinned-language whisper-large-v3 more accurate for
   Greek than auto-detection.
 - **AI-native tool surface (none of the compared apps ship this natively;
@@ -139,12 +139,12 @@ snapshot rather than a live feature tracker.
    over a folder's frontmatter keys (closest useful subset of Notion's
    databases without adopting its data model).
 2. **Mobile-friendly layout** for the existing web GUI (a phone browser
-   hitting `llm.tzekos.eu` today gets the desktop layout).
+   hitting `dsh.example.com` today gets the desktop layout).
 3. **Version history / snapshotting** for notes outside `.trash`, so a bad
    overwrite (choosing "mine" on a conflict) is recoverable without relying
    on an external sync tool's own history.
 4. **Optional cloud OCR fallback** for handwriting Tesseract struggles with,
    kept strictly opt-in given the zero-knowledge encryption promise.
 5. **A read-only public share link** for a single unencrypted note, built on
-   the estate's existing `/report-public/` pattern rather than exposing the
+   a `/report-public/`-style pattern rather than exposing the
    daemon itself.

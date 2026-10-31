@@ -59,6 +59,11 @@ Author: Loukas "Luca" Tzekos. License: MIT.
 - **Attachments** — upload, paste, or drag-and-drop images, audio, video and
   PDF, with inline previews; risky file types (HTML, SVG, JS, …) are always
   forced to download so an uploaded file can never script the DSH origin.
+  **Large files:** uploads above 64 MiB are sent as 64 MiB slices
+  (`begin` / `chunk`… / `finish`), because an edge such as Cloudflare refuses
+  any single request body over 100 MB. The server stages the slices in a hidden
+  `.nk-up-*` file, renames it into place at `finish`, and removes it on any
+  failure or abort. The assembled-file cap is 1 GiB (`maxAttachBytes`).
 - **Client-side zero-knowledge encryption** — see the [Security model](#security-model)
   section below. Encrypted notes/attachments/folders are opaque to the
   server, to sync tools and to AI tools; only the browser that knows the
@@ -89,7 +94,7 @@ Author: Loukas "Luca" Tzekos. License: MIT.
 ![AI Enhance](docs/screenshots/v2-ai.png)
 ![Connect](docs/screenshots/v2-connect.png)
 
-Captured from the live DSH GUI with the tzekos.eu theme (dark mode).
+Captured from the live DSH GUI with a custom theme (dark mode).
 
 | | |
 |---|---|
@@ -123,7 +128,7 @@ Note Keeper installs like any other DSH web plugin.
    - id: dsh-note-keeper
      config:
        vault: ~/NoteKeeper          # or point at an existing Obsidian vault
-       trustedHosts: [llm.tzekos.eu]
+       trustedHosts: [dsh.example.com]
        aiWrite: true
        aiDelete: true
    ```
@@ -140,13 +145,14 @@ All keys are optional; defaults come from `DEFAULTS` in `lib/index.js`.
 | Key | Default | Meaning |
 | --- | --- | --- |
 | `vault` | `~/NoteKeeper` | Vault directory (created if missing). Point at an existing Obsidian vault to share it. `~` is expanded; the `NK_VAULT` environment variable overrides this. |
-| `trustedHosts` | `['llm.tzekos.eu']` | Extra hostnames (besides loopback) the browser gate accepts as same-origin. |
+| `trustedHosts` | `[]` | Extra hostnames (besides loopback) the browser gate accepts as same-origin. |
 | `requireCookie` | `true` | Require the DSH browser-session cookie on every request (reads included). |
 | `binary` | `bin/notekeeperd` inside the package | Path to the `notekeeperd` Go binary. |
 | `tesseract` | `tesseract` | Tesseract binary/name used for OCR. |
 | `dailyFolder` | `Daily` | Folder for daily notes (`Daily/YYYY-MM-DD.md`). |
 | `inboxNote` | `Inbox.md` | Target note for quick capture. |
 | `attachmentsFolder` | `attachments` | Default folder for uploads. |
+| `maxAttachBytes` | `0` (= 1 GiB) | Cap for one assembled attachment (daemon env `NK_MAX_ATTACH`). |
 | `templatesFolder` | `Templates` | Folder scanned for note templates. |
 | `aiWrite` | `true` | Whether the `notes_*` tools may create/modify notes. |
 | `aiDelete` | `true` | Whether the `notes_*` tools may delete (trash) notes/folders. |
@@ -185,7 +191,7 @@ once.
   as an Obsidian vault. Every change either app makes appears live in the
   other (Note Keeper watches the folder with fsnotify and refreshes over
   SSE within a fraction of a second; Obsidian watches it natively).
-- **Other desktops and mobile:** use whatever the estate already relies on
+- **Other desktops and mobile:** use whatever you already rely on
   to sync a plain folder — **Syncthing** (Android and desktop), **Obsidian
   Sync**, **iCloud** or **Möbius Sync** on iOS, or **git**. Note Keeper does
   not care which one is used: it treats every external write to the vault
@@ -198,6 +204,17 @@ once.
   files) are opaque binary blobs to Obsidian. **Only Note Keeper can decrypt
   and display encrypted content** — Obsidian has no matching plugin. Open
   and unlock encrypted notes in Note Keeper.
+- **Unrecognisable attachments:** a file uploaded into an encrypted folder is
+  sealed in the browser (AES-256-GCM) before it leaves the page and stored under
+  a random name (`enc-<18 hex>.nkenc`). Its real name, size and type live
+  *inside* the ciphertext (an `NKM1` header), so neither the connection (URLs,
+  bodies, chunk boundaries aside) nor the vault, the cloud mirror or the
+  daemon ever learns what the file was. Note Keeper shows the real name after
+  you unlock it. Older `NKE1` blobs without the header still open. The note
+  embed inserted on upload references the opaque name, so type links by
+  pasting from the upload, not by guessing the file name. Sealing happens in
+  memory: budget about 4x the file size in browser RAM (roughly 1.2 GB for
+  a 300 MB file).
 
 ## AI tools
 
@@ -287,6 +304,7 @@ dsh-note-keeper/
 │   ├── Paint.jsx / paint-core.js   retro drawing canvas
 │   ├── Graph.jsx / graph-core.js   force-directed graph view
 │   ├── crypto.js         zero-knowledge encryption primitives
+│   ├── upload.js         chunked upload transport + sealed uploads
 │   ├── api.js            fetch client for /note-keeper/api
 │   ├── markdown.js       Markdown rendering (marked + DOMPurify) + outline
 │   ├── tree.js           vault-tree helpers
@@ -307,4 +325,8 @@ dsh-note-keeper/
 
 ## License
 
-MIT — see `LICENSE`.
+MIT, see `LICENSE`.
+
+---
+
+Built by Luca Tzekos, who also makes [**Job Opportunities API**](https://jobopportunitiesapi.org): employer-direct job data with per-field provenance you can verify yourself, free to read and available as an API. If this plugin is useful to you, a star on this repo or a look at [jobopportunitiesapi.org](https://jobopportunitiesapi.org) is the best thanks.

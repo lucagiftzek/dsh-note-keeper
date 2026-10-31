@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -83,6 +84,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("open vault: %v", err)
 	}
+	api.SweepStaging(v) // orphaned .nk-up-* staging files from a crash
 	ix := index.New()
 	hub := watch.NewHub()
 	w := watch.New(v, ix, hub)
@@ -100,6 +102,13 @@ func main() {
 		TemplatesDir: env("NK_TEMPLATES", "Templates"),
 		Version:      version,
 	}
+	if v := os.Getenv("NK_MAX_ATTACH"); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
+			cfg.MaxAttach = n
+		} else {
+			log.Printf("ignoring NK_MAX_ATTACH=%q (want a positive byte count)", v)
+		}
+	}
 	// Remote device sync (Obsidian plugin, WebDAV, cloud mirror) on its own
 	// loopback listener, reached from the internet only through a dedicated
 	// edge route. A failure here never takes the local app down.
@@ -110,7 +119,7 @@ func main() {
 			log.Printf("sync disabled: NK_SYNC_ADDR must be a loopback address, got %q", saddr)
 		} else if svc, err := devsync.New(devsync.Config{
 			StateDir:   expandHome(env("NK_STATE", "~/.local/state/note-keeper")),
-			PublicURL:  env("NK_SYNC_PUBLIC_URL", "https://llm.tzekos.eu/nk-sync"),
+			PublicURL:  env("NK_SYNC_PUBLIC_URL", ""),
 			IsEnvelope: func(b []byte) bool { return api.IsEnvelope(string(b)) },
 			Touch:      w.Touch,
 			Rclone:     env("NK_RCLONE", "rclone"),

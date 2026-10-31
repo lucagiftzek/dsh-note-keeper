@@ -7,7 +7,7 @@
 # Optional config (all keys have defaults, see lib/index.js DEFAULTS):
 #   config:
 #     vault: ~/NoteKeeper          # point at an existing Obsidian vault to share it
-#     trustedHosts: [llm.tzekos.eu]
+#     trustedHosts: [dsh.example.com]
 #     aiWrite: true
 #     aiDelete: true
 - insert:

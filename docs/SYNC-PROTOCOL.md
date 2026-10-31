@@ -20,7 +20,7 @@ hashes from its last successful sync as the common base.
 
 ## Transport and endpoint
 
-- Public base URL: `https://llm.tzekos.eu/nk-sync` (TLS by Cloudflare). A
+- Public base URL: `https://dsh.example.com/nk-sync` (TLS by Cloudflare). A
   dedicated edge route sends only `/nk-sync/` to the daemon's sync listener
   (`127.0.0.1:3095`), bypassing the SSO gate. Every request except
   `hello` and `pair` must be authenticated by a paired device.
@@ -97,7 +97,7 @@ local, remote and base hashes (null when absent):
 
 ## WebDAV (for other apps)
 
-`https://llm.tzekos.eu/nk-sync/dav/` uses Basic auth: user = device id,
+`https://dsh.example.com/nk-sync/dav/` uses Basic auth: user = device id,
 password = the device secret, from **Connect → WebDAV app**. It works with
 Remotely Save (Obsidian), Cyberduck, rclone, the iOS/Android Files apps and
 most Markdown editors with WebDAV sync. Deletes go to `.trash`, and hidden

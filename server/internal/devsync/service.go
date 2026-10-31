@@ -29,7 +29,7 @@ const Prefix = "/nk-sync"
 // Config configures the service.
 type Config struct {
 	StateDir   string                    // devices.json, cloud.json (outside the vault)
-	PublicURL  string                    // e.g. https://llm.tzekos.eu/nk-sync
+	PublicURL  string                    // e.g. https://dsh.example.com/nk-sync
 	VaultName  string                    // shown to clients
 	IsEnvelope func(content []byte) bool // encrypted-note detector (api.IsEnvelope)
 	Touch      func(rels ...string)      // reindex hook after writes

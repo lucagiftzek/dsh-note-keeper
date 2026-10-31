@@ -70,6 +70,12 @@ export const api = {
   graph: (tags) => get('/graph', { tags: tags ? 1 : undefined }),
   recent: (limit) => get('/recent', { limit }),
   upload: (blob, name, dir, encrypted) => sendBinary('/attachment', blob, { name, dir, encrypted: encrypted ? 1 : undefined }),
+  // Chunked uploads for bodies over the edge's 100 MB per-request cap:
+  // begin -> chunk* (raw bodies, sequential slices) -> finish (renames into place).
+  uploadBegin: (name, dir, size, encrypted) => send('POST', '/attachment/begin', { name, dir, size, encrypted: encrypted ? 1 : 0 }),
+  uploadChunk: (id, blob) => sendBinary('/attachment/chunk', blob, { id }),
+  uploadFinish: (id) => send('POST', '/attachment/finish', { id }),
+  uploadAbort: (id) => send('DELETE', '/attachment/abort', undefined, { id }),
   fileBytes: async (path) => {
     const r = await fetch(fileUrl(path), { credentials: 'same-origin' })
     if (!r.ok) throw new ApiError(r.status, { error: 'download failed' })

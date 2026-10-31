@@ -18,6 +18,10 @@
 //	GET    /backlinks?path=
 //	GET    /recent?limit=
 //	POST   /attachment?dir=&name=          raw body -> {path}
+//	POST   /attachment/begin  {name,dir,size,encrypted?}    chunked upload: open session
+//	POST   /attachment/chunk?id=           raw body appends one chunk
+//	POST   /attachment/finish  {id}       rename staging into place -> {path}
+//	DELETE /attachment/abort?id=           discard a chunked upload
 //	GET    /file?path=                     raw bytes (Range supported)
 //	POST   /ocr       {path,lang} | raw image body with ?lang=
 //	POST   /capture   {text,target?,todo?}
@@ -44,6 +48,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -56,10 +61,14 @@ import (
 
 // Limits.
 const (
-	MaxNoteBytes       = 16 << 20
-	MaxAttachmentBytes = 200 << 20
-	MaxOCRBytes        = 25 << 20
-	MaxJSONBytes       = 20 << 20
+	MaxNoteBytes = 16 << 20
+	MaxOCRBytes  = 25 << 20
+	MaxJSONBytes = 20 << 20
+
+	// DefaultMaxAttachmentBytes caps one attachment when the host does not
+	// configure NK_MAX_ATTACH. Chunked uploads assemble on the server, so this
+	// is the ceiling for the final assembled file, not for one request.
+	DefaultMaxAttachmentBytes = 1 << 30
 )
 
 // Config holds daemon settings.
@@ -73,6 +82,7 @@ type Config struct {
 	AttachFolder string        // e.g. "attachments"
 	TemplatesDir string        // e.g. "Templates"
 	Version      string
+	MaxAttach    int64 // per-attachment byte cap (0 = DefaultMaxAttachmentBytes)
 
 	Sync          *devsync.Service // remote device sync (nil disables the /sync admin routes)
 	SyncListening string           // address the public sync listener is bound to ("" = off)
@@ -86,6 +96,9 @@ type Server struct {
 	w   *watch.Watcher
 	ocr chan struct{} // semaphore bounding concurrent OCR processes
 	now func() time.Time
+
+	uploadsMu sync.Mutex
+	uploads   map[string]*uploadSession // in-flight chunked uploads (chunked.go)
 }
 
 // New builds a server.
@@ -111,7 +124,7 @@ func New(cfg Config, v *vault.Vault, ix *index.Index, w *watch.Watcher) *Server 
 	if cfg.TemplatesDir == "" {
 		cfg.TemplatesDir = "Templates"
 	}
-	return &Server{cfg: cfg, v: v, ix: ix, w: w, ocr: make(chan struct{}, cfg.OCRParallel), now: time.Now}
+	return &Server{cfg: cfg, v: v, ix: ix, w: w, ocr: make(chan struct{}, cfg.OCRParallel), now: time.Now, uploads: map[string]*uploadSession{}}
 }
 
 // Handler returns the routed, authenticated handler.
@@ -131,6 +144,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /backlinks", s.backlinks)
 	mux.HandleFunc("GET /recent", s.recent)
 	mux.HandleFunc("POST /attachment", s.attach)
+	mux.HandleFunc("POST /attachment/begin", s.uploadBegin)
+	mux.HandleFunc("POST /attachment/chunk", s.uploadChunk)
+	mux.HandleFunc("POST /attachment/finish", s.uploadFinish)
+	mux.HandleFunc("DELETE /attachment/abort", s.uploadAbort)
 	mux.HandleFunc("GET /file", s.file)
 	mux.HandleFunc("POST /ocr", s.ocrHandler)
 	mux.HandleFunc("POST /capture", s.capture)
@@ -558,11 +575,7 @@ func (s *Server) attach(w http.ResponseWriter, r *http.Request) {
 	if dir == "" {
 		dir = s.cfg.AttachFolder
 	}
-	name := SafeTitle(strings.TrimSuffix(q.Get("name"), path.Ext(q.Get("name"))))
-	ext := strings.ToLower(path.Ext(q.Get("name")))
-	if !regexp.MustCompile(`^\.[a-z0-9]{1,8}$`).MatchString(ext) {
-		ext = ".bin"
-	}
+	name, ext := splitAttachName(q.Get("name"))
 	if _, err := vault.Clean(dir, false); err != nil {
 		fail(w, err)
 		return
@@ -577,7 +590,7 @@ func (s *Server) attach(w http.ResponseWriter, r *http.Request) {
 		fail(w, vault.ErrLocked)
 		return
 	}
-	n, err := s.v.WriteStream(p, r.Body, MaxAttachmentBytes)
+	n, err := s.v.WriteStream(p, r.Body, s.maxAttach())
 	if err != nil {
 		fail(w, err)
 		return

@@ -25,7 +25,7 @@ interface NoteKeeperSyncSettings {
 }
 
 const DEFAULT_SETTINGS: NoteKeeperSyncSettings = {
-	serverUrl: "https://llm.tzekos.eu/nk-sync",
+	serverUrl: "https://dsh.example.com/nk-sync",
 	deviceId: "",
 	deviceSecret: "",
 	deviceName: "",
@@ -342,7 +342,7 @@ class NoteKeeperSyncSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Server URL")
-			.setDesc("The Note Keeper sync endpoint, e.g. https://llm.tzekos.eu/nk-sync")
+			.setDesc("The Note Keeper sync endpoint, e.g. https://dsh.example.com/nk-sync")
 			.addText((text) =>
 				text
 					.setPlaceholder(DEFAULT_SETTINGS.serverUrl)

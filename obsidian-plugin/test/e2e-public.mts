@@ -2,7 +2,7 @@
 // Usage: node test/e2e-public.mts <PAIRING-CODE> [baseUrl]
 import { RemoteClient, makeFetchTransport } from "../src/remote.ts";
 const code = process.argv[2];
-const base = process.argv[3] || "https://llm.tzekos.eu/nk-sync";
+const base = process.argv[3] || "https://dsh.example.com/nk-sync";
 const c = new RemoteClient(base, makeFetchTransport(fetch));
 const p = await c.pair(code, { name: "E2E test", platform: "linux", app: "e2e" });
 console.log("paired", p.vault, p.protocol);

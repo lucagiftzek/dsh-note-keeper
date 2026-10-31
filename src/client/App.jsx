@@ -5,7 +5,8 @@
  */
 import * as React from 'react'
 import { api, subscribe, transcribe, polish, fileUrl, ApiError } from './api.js'
-import { KeyRing, parseEnvelope, sealNote, openNote, deriveKey, randomBytes, unb64, makeFolderMarker, unlockFolderKey, sealBlob, openBlob, ITERATIONS } from './crypto.js'
+import { KeyRing, parseEnvelope, sealNote, openNote, deriveKey, randomBytes, unb64, makeFolderMarker, unlockFolderKey, sealBlob, openBlob, openBlobNamed, ITERATIONS } from './crypto.js'
+import { putFile as uploadFile, putSealed } from './upload.js'
 import { createRenderer, outline, counts, splitFrontmatter } from './markdown.js'
 import { buildTree, visibleRows, makeResolver, fileKind, lockedScopeOf, stem, dirOf, baseOf, fmtBytes, fmtAgo } from './tree.js'
 import { Icon, IBtn, Modal, PromptDialog, ConfirmDialog, Menu, EncryptDialog, UnlockDialog } from './ui.jsx'
@@ -324,18 +325,21 @@ export function App() {
   }
 
   // ---- attachments -----------------------------------------------------------
-  /** Upload into the right place (sealed inside locked folders); returns the vault path. */
+  const putFile = (blob, name, dir, encrypted, onProgress) => uploadFile(api, blob, name, dir, encrypted, onProgress)
+  /** Upload into the right place; returns the vault path. Inside an encrypted
+   *  folder the file is sealed in the browser and stored under an opaque random
+   *  name — the original name travels only inside the ciphertext, so neither
+   *  the connection nor the vault reveals what the file was. */
   const uploadBlob = async (blob, name, nearPath) => {
     const folder = nearPath !== undefined ? dirOf(nearPath) : currentFolder()
     const scope = lockedScopeOf(folder ? folder + '/x' : 'x', tree.locked)
     if (scope !== null) {
       const key = await needFolderKey(scope)
-      const sealed = await sealBlob(key, new Uint8Array(await blob.arrayBuffer()))
-      const r = await api.upload(new Blob([sealed]), name + '.nkenc', (scope ? scope + '/' : '') + 'attachments', true)
+      const r = await putSealed(api, key, blob, name, (scope ? scope + '/' : '') + 'attachments', (f) => say('Encrypting + uploading ' + name + '… ' + Math.round(f * 100) + '%'))
       return r.path
     }
     const dir = (status && status.folders && status.folders.attachments) || 'attachments'
-    const r = await api.upload(blob, name, dir)
+    const r = await putFile(blob, name, dir, false, (f) => say('Uploading ' + name + '… ' + Math.round(f * 100) + '%'))
     return r.path
   }
   const onUpload = async (file) => {
@@ -540,7 +544,7 @@ export function App() {
             if (!parseEnvelope(res.content)) await api.save(e.path, await sealNote(key, res.content, { scope: 'folder', salt }), res.mtime)
           } else if (!e.path.endsWith('.nkenc')) {
             const bytes = await api.fileBytes(e.path)
-            await api.upload(new Blob([await sealBlob(key, bytes)]), baseOf(e.path) + '.nkenc', dirOf(e.path), true)
+            await putFile(new Blob([await sealBlob(key, bytes)]), baseOf(e.path) + '.nkenc', dirOf(e.path), true)
             await api.trash(e.path, true) // purge: plaintext must not linger in .trash
           }
           done++
@@ -568,13 +572,14 @@ export function App() {
           const env = parseEnvelope(res.content)
           if (env && env.scope === 'folder') plain.push({ path: e.path, text: await openNote(key, env), mtime: res.mtime })
         } else if (e.path.endsWith('.nkenc')) {
-          plain.push({ path: e.path, bytes: await openBlob(key, await api.fileBytes(e.path)) })
+          const opened = await openBlobNamed(key, await api.fileBytes(e.path))
+          plain.push({ path: e.path, name: (opened.meta && opened.meta.name) || undefined, bytes: opened.bytes })
         }
       }
       await api.unlockFolder(folder).catch(async (err) => { if (err.code === 'still_encrypted') return fetch('/note-keeper/api/lock?folder=' + encodeURIComponent(folder) + '&force=1', { method: 'DELETE', credentials: 'same-origin', headers: { 'x-requested-with': 'dsh-note-keeper' } }); throw err })
       for (const p of plain) {
         if (p.text !== undefined) await api.save(p.path, p.text, p.mtime)
-        else { await api.upload(new Blob([p.bytes]), baseOf(p.path).replace(/\.nkenc$/, ''), dirOf(p.path)); await api.trash(p.path, true) }
+        else { await putFile(new Blob([p.bytes]), p.name || baseOf(p.path).replace(/\.nkenc$/, ''), dirOf(p.path)); await api.trash(p.path, true) }
       }
       ring.current.forget('folder:' + folder)
       await loadTree()
@@ -955,17 +960,22 @@ export function App() {
   )
 }
 
-/** Decrypts an encrypted attachment for preview/download on demand. */
+/** Decrypts an encrypted attachment for preview/download on demand. The real
+ *  file name lives inside the ciphertext (NKM1); the stored path is opaque. */
 function SealedView({ path, getKey }) {
   const [url, setUrl] = useState('')
   const [err, setErr] = useState('')
-  const name = baseOf(path).replace(/\.nkenc$/, '')
-  const kind = fileKind({ path: name })
+  const [shown, setShown] = useState('')
+  const fallbackName = baseOf(path).replace(/\.nkenc$/, '')
+  const name = shown || fallbackName
   const open = async () => {
     try {
       const key = await getKey()
-      const bytes = await openBlob(key, await api.fileBytes(path))
-      const type = kind === 'image' ? 'image/' + (name.split('.').pop() === 'jpg' ? 'jpeg' : name.split('.').pop()) : kind === 'audiofile' ? 'audio/webm' : kind === 'pdf' ? 'application/pdf' : 'application/octet-stream'
+      const { bytes, meta } = await openBlobNamed(key, await api.fileBytes(path))
+      const real = (meta && meta.name) || fallbackName
+      setShown(real)
+      const kind = fileKind({ path: real })
+      const type = kind === 'image' ? 'image/' + (real.split('.').pop() === 'jpg' ? 'jpeg' : real.split('.').pop()) : kind === 'audiofile' ? 'audio/webm' : kind === 'pdf' ? 'application/pdf' : (meta && meta.type) || 'application/octet-stream'
       setUrl(URL.createObjectURL(new Blob([bytes], { type })))
     } catch (e) { if (e.message !== 'cancelled') setErr(errText(e)) }
   }
@@ -973,7 +983,7 @@ function SealedView({ path, getKey }) {
   if (!url) return <div><p>Encrypted attachment <b>{name}</b>.</p><button type="button" className="nk-btn nk-primary" onClick={open}>Decrypt and show</button>{err ? <p style={{ color: 'var(--nk-err)' }}>{err}</p> : null}</div>
   return (
     <div style={{ width: '100%' }}>
-      {kind === 'image' ? <img src={url} alt={name} /> : kind === 'audiofile' ? <audio controls src={url} style={{ width: '100%' }} /> : null}
+      {fileKind({ path: name }) === 'image' ? <img src={url} alt={name} /> : fileKind({ path: name }) === 'audiofile' ? <audio controls src={url} style={{ width: '100%' }} /> : null}
       <p><a className="nk-btn" href={url} download={name}>Save decrypted copy</a></p>
     </div>
   )

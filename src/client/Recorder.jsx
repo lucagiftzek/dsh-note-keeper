@@ -4,7 +4,7 @@
  * audio, runs speech-to-text and writes the transcript note.
  *
  * Language choice is explicit because it matters: Greek goes to
- * whisper-large-v3 (word-exact Greek in the estate's measurements) with the
+ * whisper-large-v3 (word-exact Greek in our measurements) with the
  * language pinned, English/Italian likewise; "auto" lets the engine detect.
  */
 import * as React from 'react'
@@ -173,7 +173,7 @@ export function Recorder({ onSave, onCancel, busy, defaultLang }) {
       {state === 'done' ? <label className="nk-check"><input type="checkbox" checked={doPolish} onChange={(e) => setDoPolish(e.target.checked)} /><span>Clean up punctuation and casing after transcription (keeps the raw transcript too)</span></label> : null}
       {err ? <div style={{ color: 'var(--nk-err)' }}>{err}</div> : null}
       <div style={{ fontSize: 12, color: 'var(--nk-fg3)' }}>
-        Transcription runs through the estate's speech service (dsh-voice): Greek and English are pinned to their language for accuracy.
+        Transcription runs through your speech service (dsh-voice): Greek and English are pinned to their language for accuracy.
         The note is saved as Markdown with metadata (language, engine, duration) and embeds the recording, so Obsidian plays it too.
       </div>
     </div>

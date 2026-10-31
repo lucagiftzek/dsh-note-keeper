@@ -17,7 +17,7 @@ import { effectiveConfig } from '../lib/index.js'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const BIN = join(ROOT, 'bin', 'notekeeperd')
 let vault, daemon, server, base, tools
-const cfg = { trustedHosts: ['llm.tzekos.eu'], aiWrite: true, aiDelete: true }
+const cfg = { trustedHosts: ['dsh.example.com'], aiWrite: true, aiDelete: true }
 
 before(async () => {
   if (!existsSync(BIN)) execFileSync('npm', ['run', 'build:server'], { cwd: ROOT, stdio: 'inherit' })
@@ -187,7 +187,7 @@ test('pure helpers', () => {
   const c = effectiveConfig({ vault: '~/V', aiWrite: 'nope', trustedHosts: 'x' })
   assert.ok(c.vault.endsWith('/V') && !c.vault.startsWith('~'))
   assert.equal(c.aiWrite, true)
-  assert.deepEqual(c.trustedHosts, ['llm.tzekos.eu'])
-  const fake = (h) => ({ method: 'GET', socket: { remoteAddress: '10.0.0.1' }, headers: h })
+  assert.deepEqual(c.trustedHosts, [])
+  const fake = (h) => ({ method: 'GET', socket: { remoteAddress: '192.0.2.1' }, headers: h })
   assert.equal(checkRequest(fake({ host: 'localhost' })).layer, 'R1')
 })

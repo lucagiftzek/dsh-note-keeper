@@ -7,7 +7,7 @@
  *     should inject once (e.g. via a <style> tag).
  *
  * Design constraints (see task spec): square corners, 1px borders, hard
- * offset shadows via var(--tz-shadow-pop), tzekos.eu accent/secondary
+ * offset shadows via var(--tz-shadow-pop), custom accent/secondary
  * colours, Silkscreen display font for labels, DSH theme background/label
  * variables so the editor works in both dark and light mode.
  *
@@ -899,7 +899,7 @@ function drawSelectionHandles(ctx, shape) {
 }
 
 // ---------------------------------------------------------------------------
-// CSS (retro Win95-adjacent bevels, tzekos.eu square-corner/hard-shadow system)
+// CSS (retro Win95-adjacent bevels, square-corner/hard-shadow system)
 // ---------------------------------------------------------------------------
 
 export const PAINT_CSS = [
