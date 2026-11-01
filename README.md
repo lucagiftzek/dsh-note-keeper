@@ -1,6 +1,10 @@
 # Note Keeper (`dsh-note-keeper`)
 
+[![npm](https://img.shields.io/npm/v/%40lucagiftzek%2Fdsh-note-keeper?label=npm)](https://www.npmjs.com/package/@lucagiftzek/dsh-note-keeper)
+
 Obsidian-compatible Markdown notes in the DSH sidebar, with search, graph, audio notes and agent tools.
+
+Install from npm: `dsh plugin --profile web add @lucagiftzek/dsh-note-keeper` (the package carries a prebuilt Linux x64 daemon), or from GitHub: clone, build and link a checkout:
 
 ```bash
 git clone https://github.com/lucagiftzek/dsh-note-keeper.git && cd dsh-note-keeper
@@ -116,8 +120,12 @@ Captured from the live DSH GUI with a custom theme (dark mode).
 
 ## Install
 
-Note Keeper installs like any other DSH web plugin, from a checkout: it ships a small Go
-daemon that is built on your machine, so `dsh plugin add github:...` alone is not enough.
+Install from npm: `dsh plugin --profile web add @lucagiftzek/dsh-note-keeper`, or from GitHub: build a checkout and link it (steps below; `dsh plugin add github:lucagiftzek/dsh-note-keeper` alone does not build the daemon).
+
+The npm package carries a prebuilt `bin/notekeeperd` for Linux x64, so on that platform the
+one command above is the whole install (restart `dsh web` afterwards). From GitHub, or on any
+other platform, Note Keeper needs its small Go daemon built on your machine, so install it from
+a checkout:
 
 1. Build it (Go ≥ 1.22 and Node ≥ 22.5):
 
@@ -131,8 +139,8 @@ daemon that is built on your machine, so `dsh plugin add github:...` alone is no
    Optional: `sudo apt install tesseract-ocr tesseract-ocr-ell` for OCR.
 
 2. Link it into the web profile, `~/.dsh/profiles/web/package.json`: add
-   `"dsh-note-keeper": "link:/path/to/dsh-note-keeper"` to `dependencies` and
-   `"dsh-note-keeper"` to `dsh.profile.bundles`, then run `pnpm install` there.
+   `"@lucagiftzek/dsh-note-keeper": "link:/path/to/dsh-note-keeper"` to `dependencies` and
+   `"@lucagiftzek/dsh-note-keeper"` to `dsh.profile.bundles`, then run `pnpm install` there.
 
 3. Optional configuration goes on the plugin row in
    `~/.dsh/profiles/web/cordis.patch.yml`:

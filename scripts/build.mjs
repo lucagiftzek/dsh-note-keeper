@@ -8,7 +8,7 @@ import { build } from 'esbuild'
 import { readFileSync, statSync } from 'node:fs'
 import { stubLangHtml } from './esbuild-plugins.mjs'
 
-const ID = 'dsh-note-keeper'
+const ID = '@lucagiftzek/dsh-note-keeper'
 await build({
   entryPoints: ['src/client/index.jsx'],
   bundle: true,
