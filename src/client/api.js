@@ -56,6 +56,24 @@ export function sendBinary(path, blob, query) {
 /** URL for an attachment (images, audio, video, pdf) inside the vault. */
 export const fileUrl = (path, download) => BASE + '/file' + qs({ path, download: download ? 1 : undefined })
 
+/** Same-origin URL that makes the server fetch a remote (https) image. */
+export const remoteImageUrl = (url) => BASE + '/remote-image' + qs({ url })
+
+let remoteProbe = null
+/**
+ * Does the server half answer /remote-image? (It loads at the next dsh-web
+ * restart; until then the preview keeps the old direct load.) Memoised.
+ * @returns {Promise<boolean>}
+ */
+export function remoteImagesProxied() {
+  if (!remoteProbe) {
+    remoteProbe = fetch(BASE + '/remote-image?probe=1', { credentials: 'same-origin' })
+      .then((r) => r.status === 204)
+      .catch(() => { remoteProbe = null; return false })
+  }
+  return remoteProbe
+}
+
 export const api = {
   status: () => get('/status'),
   tree: () => get('/tree'),

@@ -27,7 +27,7 @@ function bytesToHex(bytes: ArrayBuffer | Uint8Array): string {
 	return out;
 }
 
-/** Standard base64url (RFC 4648 §5), no padding — matches Go's
+/** Standard base64url (RFC 4648 §5), no padding, matches Go's
  * base64.RawURLEncoding used by the server for secrets and signatures. */
 function bytesToBase64Url(bytes: ArrayBuffer | Uint8Array): string {
 	const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
@@ -61,7 +61,7 @@ export async function sha256Hex(data: Uint8Array | string): Promise<string> {
 /** HMAC-SHA256 over an arbitrary UTF-8 message, base64url-encoded, matching
  * the server's devsync.Sign. secret is treated as raw UTF-8 bytes (the
  * pairing response's "secret" field, itself base64url text used verbatim as
- * key material by the server — see devsync.Sign(secret, ...)). */
+ * key material by the server, see devsync.Sign(secret, ...)). */
 export async function hmacB64url(secret: string, message: string): Promise<string> {
 	const key = await subtle().importKey(
 		"raw",

@@ -12,51 +12,51 @@ Author: Loukas "Luca" Tzekos. License: MIT.
 
 ## Feature overview
 
-- **Left-sidebar "Notes" entry** — a row in the sidebar panel list
+- **Left-sidebar "Notes" entry**: a row in the sidebar panel list
   (`sidebar.panellist` slot) that opens Note Keeper as a full-page panel
   registered in the main-column keyed slot.
-- **Obsidian-compatible vault** — plain Markdown files under a normal
+- **Obsidian-compatible vault**: plain Markdown files under a normal
   directory (default `~/NoteKeeper`, configurable via `vault`). Wikilinks
   (`[[Note]]`), embeds (`![[Note]]`), `#tags` (including nested
   `project/alpha`), YAML frontmatter, callouts (`> [!warning]`), and a
   `.trash` folder for recoverable deletes, exactly the way Obsidian lays
   them out.
-- **Rename-safe wikilinks** — moving or renaming a note rewrites every
+- **Rename-safe wikilinks**: moving or renaming a note rewrites every
   `[[wikilink]]`/`![[embed]]` that pointed at it, in every other note, the
   same way Obsidian does.
-- **Live sync from any writer** — an fsnotify-backed watcher reindexes any
+- **Live sync from any writer**: an fsnotify-backed watcher reindexes any
   change (this app's own writes, Obsidian on the same machine, a sync
   client landing a phone edit) and pushes a Server-Sent Events refresh to
   every open browser tab; a 5-minute full rescan repairs anything a dropped
   kernel event missed.
-- **Full-text search** — accent-insensitive for both Greek and Latin script
+- **Full-text search**: accent-insensitive for both Greek and Latin script
   (Καλημέρα ≈ καλημερα ≈ ΚΑΛΗΜΕΡΑ), last-word prefix matching while typing,
   and `"quoted phrase"` matching. Filterable by tag (nested tags included)
   or folder.
-- **Tags, backlinks, outline, graph** — a tag browser with counts, a
+- **Tags, backlinks, outline, graph**: a tag browser with counts, a
   backlinks panel per note, a heading outline, and an interactive local
   graph view (note/attachment/tag nodes, plus "ghost" nodes for unresolved
   links, just like Obsidian's graph).
-- **Quick capture & daily notes** — one shortcut appends a timestamped
+- **Quick capture & daily notes**: one shortcut appends a timestamped
   bullet (or a `- [ ]` task) to `Inbox.md`; another opens or creates
   today's daily note at `Daily/YYYY-MM-DD.md`, expanding
   `Templates/Daily.md` when present.
-- **Templates** — any note under the `Templates/` folder can be used to
+- **Templates**: any note under the `Templates/` folder can be used to
   start a new note, with `{{title}}`, `{{date}}` and `{{time}}` expanded.
-- **Audio notes** — record with `MediaRecorder`, send the clip to the
+- **Audio notes**: record with `MediaRecorder`, send the clip to the
   `dsh-voice` plugin's `/api/voice/stt` endpoint with the language pinned
   (Greek and English are first-class; several others are offered; "auto"
   lets the engine detect), optionally run a text-polish pass, and save the
   result as a Markdown note with `nk-type: audio` frontmatter
   (`language`, `engine`, `duration`) embedding the audio clip.
-- **Retro paint canvas** — an MS-Paint-style drawing editor: pencil, brush,
+- **Retro paint canvas**: an MS-Paint-style drawing editor: pencil, brush,
   eraser, spray and more, over a raster canvas plus an editable vector shape
   layer. Saving writes a PNG, the vector JSON, and (optionally) OCR'd text
   from the drawing into a single "drawing" note.
-- **OCR** — Tesseract (`eng+ell` by default) runs over pasted/attached
+- **OCR**: Tesseract (`eng+ell` by default) runs over pasted/attached
   images and over paint-canvas drawings to extract text (handwriting
   included, on a best-effort basis).
-- **Attachments** — upload, paste, or drag-and-drop images, audio, video and
+- **Attachments**: upload, paste, or drag-and-drop images, audio, video and
   PDF, with inline previews; risky file types (HTML, SVG, JS, …) are always
   forced to download so an uploaded file can never script the DSH origin.
   **Large files:** uploads above 64 MiB are sent as 64 MiB slices
@@ -64,31 +64,31 @@ Author: Loukas "Luca" Tzekos. License: MIT.
   any single request body over 100 MB. The server stages the slices in a hidden
   `.nk-up-*` file, renames it into place at `finish`, and removes it on any
   failure or abort. The assembled-file cap is 1 GiB (`maxAttachBytes`).
-- **Client-side zero-knowledge encryption** — see the [Security model](#security-model)
+- **Client-side zero-knowledge encryption**: see the [Security model](#security-model)
   section below. Encrypted notes/attachments/folders are opaque to the
   server, to sync tools and to AI tools; only the browser that knows the
   password can read them.
-- **Conflict detection** — every save carries the mtime it was read at; a
+- **Conflict detection**: every save carries the mtime it was read at; a
   concurrent edit from another device, Obsidian, or an AI tool produces a
   conflict banner offering "load disk version", "keep both" or "overwrite
   with mine", instead of silently clobbering data.
-- **Autosave** — edits are saved 1.2 s after the last keystroke, and flushed
+- **Autosave**: edits are saved 1.2 s after the last keystroke, and flushed
   immediately when the tab is hidden or closed.
-- **Live preview editor** — CodeMirror 6 with Obsidian-style live preview: links,
+- **Live preview editor**: CodeMirror 6 with Obsidian-style live preview: links,
   wikilinks and tags are clickable while you type; source, split and reading modes too.
-- **Connect** — the Note Keeper Sync plugin for Obsidian (desktop and mobile, two-way,
+- **Connect**: the Note Keeper Sync plugin for Obsidian (desktop and mobile, two-way,
   paired with a one-time code, signed requests), WebDAV for other apps, and a
   two-way cloud mirror (Google Drive, OneDrive, Dropbox, iCloud Drive, S3) via rclone.
   See [docs/SYNC-PROTOCOL.md](docs/SYNC-PROTOCOL.md).
-- **Import** — Obsidian/Bear/Logseq/Joplin Markdown, HTML, Evernote .enex, Google Keep
+- **Import**: Obsidian/Bear/Logseq/Joplin Markdown, HTML, Evernote .enex, Google Keep
   Takeout, Notion export zips.
-- **AI Enhance** — proofread, format and interlink a note with the DSH default model
+- **AI Enhance**: proofread, format and interlink a note with the DSH default model
   (or any model chosen in its settings), previewed as a diff before anything changes.
-- **12 AI tools** (`notes_*`) — see the [AI tools](#ai-tools) table.
+- **12 AI tools** (`notes_*`), see the [AI tools](#ai-tools) table.
 
 ## Screenshots
 
-**v0.2** — live preview (links and tags clickable), AI Enhance diff review, Connect (Obsidian pairing):
+**v0.2**: live preview (links and tags clickable), AI Enhance diff review, Connect (Obsidian pairing):
 
 ![Live preview](docs/screenshots/v2-live.png)
 ![AI Enhance](docs/screenshots/v2-ai.png)
@@ -104,7 +104,8 @@ Captured from the live DSH GUI with a custom theme (dark mode).
 
 ## Install
 
-Note Keeper installs like any other DSH web plugin.
+Note Keeper installs like any other DSH web plugin, from a checkout: it ships a small Go
+daemon that is built on your machine, so `dsh plugin add github:...` alone is not enough.
 
 1. Build it (Go ≥ 1.22 and Node ≥ 22.5):
 
@@ -183,7 +184,7 @@ In the editor textarea:
 ## Obsidian sync guide
 
 Note Keeper's vault is a plain directory of Markdown files laid out the way
-Obsidian expects — there is no proprietary database or format. This is
+Obsidian expects, there is no proprietary database or format. This is
 deliberate: it is what lets the vault be edited from more than one place at
 once.
 
@@ -192,17 +193,17 @@ once.
   other (Note Keeper watches the folder with fsnotify and refreshes over
   SSE within a fraction of a second; Obsidian watches it natively).
 - **Other desktops and mobile:** use whatever you already rely on
-  to sync a plain folder — **Syncthing** (Android and desktop), **Obsidian
+  to sync a plain folder, **Syncthing** (Android and desktop), **Obsidian
   Sync**, **iCloud** or **Möbius Sync** on iOS, or **git**. Note Keeper does
   not care which one is used: it treats every external write to the vault
   the same way it treats its own, live.
 - **Encrypted notes and Obsidian:** an encrypted note is still a syntactically
   valid Markdown file (YAML frontmatter with `nk-encrypted: v1` plus a
   ```nk-cipher``` fenced block of base64 ciphertext), so Obsidian opens it
-  without errors — it just shows the placeholder warning text and the opaque
+  without errors, it just shows the placeholder warning text and the opaque
   ciphertext block, never the plaintext. Encrypted attachments (`.nkenc`
   files) are opaque binary blobs to Obsidian. **Only Note Keeper can decrypt
-  and display encrypted content** — Obsidian has no matching plugin. Open
+  and display encrypted content**, Obsidian has no matching plugin. Open
   and unlock encrypted notes in Note Keeper.
 - **Unrecognisable attachments:** a file uploaded into an encrypted folder is
   sealed in the browser (AES-256-GCM) before it leaves the page and stored under
@@ -243,7 +244,7 @@ are disabled (return a clear error) when `aiWrite: false`; `notes_delete` is
 also gated on `aiDelete: false`. **Encrypted notes and folders are always
 off-limits to models**: `notes_read` refuses to return ciphertext, and any
 write tool that would touch an encrypted `.md` file is refused by the daemon
-with `code: "locked"` — the model is told to ask the user to do it in Note
+with `code: "locked"`: the model is told to ask the user to do it in Note
 Keeper instead.
 
 ## Security model (summary)
@@ -251,18 +252,18 @@ Keeper instead.
 Two independent layers protect the vault; see `docs/ARCHITECTURE.md` for the
 full threat model.
 
-1. **Server-side request gate (`lib/security.js`)** — every browser request
+1. **Server-side request gate (`lib/security.js`)**: every browser request
    to `/note-keeper/api/*` must pass four checks (R1 loopback peer, R2
    trusted Host/origin, R3 CSRF markers on mutations, R4 the DSH session
    cookie) before it is proxied to the Go daemon, which itself only listens
    on loopback and requires a fresh per-spawn secret (`X-NK-Secret`) that
    never appears in a browser-visible surface.
-2. **Client-side zero-knowledge encryption (`src/client/crypto.js`)** —
+2. **Client-side zero-knowledge encryption (`src/client/crypto.js`)**:
    passwords are stretched with PBKDF2-SHA-256 (600,000 iterations) into a
    non-extractable AES-256-GCM key that lives only in an in-memory key ring
    (auto-forgotten after 10 minutes idle, or on demand). Encryption can be
    applied per-note or per-folder; a folder carries a `.nk-lock.json` marker
-   with a KDF salt and a key *verifier* — never a key or the plaintext. The
+   with a KDF salt and a key *verifier*, never a key or the plaintext. The
    server categorically refuses to store plaintext inside a locked folder,
    and the `notes_*` AI tools can never read or write encrypted content:
    **"Warning: Loss of the password results in permanent, unrecoverable

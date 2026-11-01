@@ -224,7 +224,7 @@ test("deletion guard: aborts a sync that would delete more than half the vault (
 
 	// With the one-shot override, the same run proceeds: local already lost
 	// these 20 files, so the guarded action is propagating that deletion to
-	// the remote (not pulling — local really did delete them).
+	// the remote (not pulling, local really did delete them).
 	const result2 = await engine.runOnce(base, { allowMassDelete: true });
 	assert.equal(result2.ok, true);
 	assert.equal(result2.deletedRemote, 20);

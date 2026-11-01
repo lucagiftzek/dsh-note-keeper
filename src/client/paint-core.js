@@ -1,5 +1,5 @@
 /**
- * paint-core.js — pure logic for the retro Paint editor. No DOM, no React.
+ * paint-core.js: pure logic for the retro Paint editor. No DOM, no React.
  * Exports: floodFill, RETRO_PALETTE, hexToRgba, vector doc helpers, UndoStack.
  * Every function here must be unit-testable under plain node:test.
  */
@@ -37,12 +37,12 @@ export function hexToRgba(hex, alpha = 255) {
 }
 
 // ---------------------------------------------------------------------------
-// Flood fill (scanline algorithm, iterative — no recursion, no stack overflow)
+// Flood fill (scanline algorithm, iterative, no recursion, no stack overflow)
 // ---------------------------------------------------------------------------
 
 /**
  * Flood-fill an ImageData-like buffer starting at (x, y) with the given
- * colour, using a horizontal scanline algorithm (iterative, stack-based —
+ * colour, using a horizontal scanline algorithm (iterative, stack-based,
  * never recursive, so it is safe on large canvases).
  *
  * @param {{data: Uint8ClampedArray, width: number, height: number}} image

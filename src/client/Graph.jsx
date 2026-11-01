@@ -1,5 +1,5 @@
 /**
- * Graph.jsx — interactive force-directed graph view for Note Keeper.
+ * Graph.jsx: interactive force-directed graph view for Note Keeper.
  *
  * Exports:
  *   - GraphView({ nodes, edges, onOpen, focus, showTags, onToggleTags })

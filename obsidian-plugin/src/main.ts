@@ -1,4 +1,4 @@
-// Note Keeper Sync — Obsidian plugin entry point. Wires the engine
+// Note Keeper Sync: Obsidian plugin entry point. Wires the engine
 // (src/engine.ts), the signed HTTP client (src/remote.ts) and the vault
 // adapter (src/obsidian-fs.ts) into a Plugin with a settings tab, status
 // bar item, ribbon icon, commands and a sync-log modal.
@@ -517,7 +517,7 @@ class SyncLogModal extends Modal {
 	onOpen(): void {
 		const { contentEl } = this;
 		contentEl.empty();
-		contentEl.createEl("h2", { text: "Note Keeper Sync — recent log" });
+		contentEl.createEl("h2", { text: "Note Keeper Sync: recent log" });
 		if (this.entries.length === 0) {
 			contentEl.createEl("p", { text: "No sync operations recorded yet." });
 			return;

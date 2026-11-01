@@ -1,12 +1,12 @@
 // Integration test against the REAL Go notekeeperd binary: spawns it, pairs
 // two devices through it, and drives the actual RemoteClient + SyncEngine
 // against its real HTTP API. This is the only test file that touches
-// node:child_process/node:fs — everything under src/ still runs unmodified
+// node:child_process/node:fs, everything under src/ still runs unmodified
 // in an Obsidian mobile context; only this test needs Node.
 //
 // Run with: npm test (this file is picked up by test/*.test.ts).
 // Skips itself (with a clear message) when Go is unavailable, but on a
-// normal dev machine it builds and runs for real — no mocks.
+// normal dev machine it builds and runs for real, no mocks.
 
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";

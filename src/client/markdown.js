@@ -118,6 +118,9 @@ export function createRenderer(resolve) {
       },
       image({ href, text }) {
         const external = /^[a-z][a-z0-9+.-]*:/i.test(href)
+        // Remote images get no src here: the view points them at the server
+        // proxy (see App.jsx), so the browser never contacts the remote host.
+        if (external && /^https?:/i.test(href)) return '<img class="nk-embed-img nk-remote" data-nk-remote="' + esc(href) + '" alt="' + esc(text) + '" loading="lazy">'
         const src = external ? href : fileUrl(resolve(decodeURIComponent(href)) || decodeURIComponent(href))
         return '<img class="nk-embed-img" src="' + esc(src) + '" alt="' + esc(text) + '" loading="lazy">'
       },
@@ -126,7 +129,7 @@ export function createRenderer(resolve) {
   return (src) => {
     const { body } = splitFrontmatter(src)
     const html = marked.parse(body)
-    return DOMPurify.sanitize(html, {
+    const clean = DOMPurify.sanitize(html, {
       ADD_ATTR: ['target', 'data-target', 'data-tag', 'controls', 'preload', 'loading'],
       ADD_TAGS: ['audio', 'video'],
       FORBID_TAGS: ['style', 'form', 'iframe', 'object', 'embed'],
@@ -135,7 +138,50 @@ export function createRenderer(resolve) {
       // javascript:, data: and every other scheme are stripped.
       ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|blob):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
     })
+    return noRemoteLoads(clean)
   }
+}
+
+/** An absolute URL to another host (protocol-relative included). */
+function isRemote(u) {
+  const s = String(u || '').trim()
+  if (/^\/\//.test(s)) return true
+  if (!/^https?:/i.test(s)) return false
+  try { return typeof location === 'undefined' || new URL(s).origin !== location.origin } catch { return true }
+}
+
+/**
+ * Server-loaded notes (1 Nov 2026): nothing in a rendered note may make the
+ * browser load from another host. Raw HTML inside a note could still carry
+ * <img src="https://...">, srcset, poster, <video>/<audio>/<source> src or a
+ * style url(); after sanitising: remote <img> becomes data-nk-remote (shown
+ * through the server proxy), every other remote load attribute is dropped,
+ * and remote links open with noopener noreferrer.
+ * @param {string} html sanitised HTML
+ */
+export function noRemoteLoads(html) {
+  if (typeof document === 'undefined' || !/https?:|\/\/|url\(/i.test(html)) return html
+  const tpl = document.createElement('template')
+  tpl.innerHTML = html
+  for (const el of tpl.content.querySelectorAll('*')) {
+    const tag = el.tagName.toLowerCase()
+    if (tag === 'img' && isRemote(el.getAttribute('src'))) {
+      el.setAttribute('data-nk-remote', el.getAttribute('src').trim().replace(/^\/\//, 'https://'))
+      el.removeAttribute('src')
+      el.classList.add('nk-remote')
+    }
+    for (const attr of ['src', 'poster', 'background', 'data', 'action', 'formaction', 'xlink:href']) {
+      if (el.hasAttribute(attr) && isRemote(el.getAttribute(attr))) el.removeAttribute(attr)
+    }
+    if (el.hasAttribute('srcset') && /https?:|\/\//i.test(el.getAttribute('srcset'))) el.removeAttribute('srcset')
+    if (el.hasAttribute('style') && /url\s*\(/i.test(el.getAttribute('style'))) el.removeAttribute('style')
+    if ((tag === 'image' || tag === 'use') && isRemote(el.getAttribute('href'))) el.removeAttribute('href')
+    if (tag === 'a' && isRemote(el.getAttribute('href'))) {
+      el.setAttribute('target', '_blank')
+      el.setAttribute('rel', 'noopener noreferrer')
+    }
+  }
+  return tpl.innerHTML
 }
 
 /** Toggle the n-th Markdown task checkbox in source text. */

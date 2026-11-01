@@ -1,5 +1,5 @@
 /**
- * dsh-note-keeper — browser half.
+ * dsh-note-keeper: browser half.
  *
  * Registers:
  *   - a "Notes" row in the left sidebar's global panel list

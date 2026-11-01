@@ -110,7 +110,7 @@ export class RemoteClient {
 		return this.deviceId;
 	}
 
-	/** GET /v1/hello — unauthenticated liveness/identity check. */
+	/** GET /v1/hello, unauthenticated liveness/identity check. */
 	async hello(): Promise<{ server: string; protocol: number }> {
 		const res = await this.transport({
 			method: "GET",
@@ -121,7 +121,7 @@ export class RemoteClient {
 		return JSON.parse(bytesToText(res.body));
 	}
 
-	/** POST /v1/pair — unauthenticated; redeems a one-time pairing code.
+	/** POST /v1/pair, unauthenticated; redeems a one-time pairing code.
 	 * On success this also installs the returned credentials on the client. */
 	async pair(code: string, device: DeviceIdentity): Promise<PairResult> {
 		const body = jsonBody({ code, device });
@@ -156,7 +156,7 @@ export class RemoteClient {
 		return { notModified: false, version: parsed.version, files: parsed.files };
 	}
 
-	/** GET /v1/file?path=P — raw bytes plus the server's hash/mtime for them. */
+	/** GET /v1/file?path=P, raw bytes plus the server's hash/mtime for them. */
 	async get(path: string): Promise<GetResult> {
 		const res = await this.authed("GET", "/v1/file", [["path", path]]);
 		if (res.status !== 200) throw errorFor(res);
@@ -167,7 +167,7 @@ export class RemoteClient {
 		};
 	}
 
-	/** PUT /v1/file?path=P&base=H&mtime=M — compare-and-swap write.
+	/** PUT /v1/file?path=P&base=H&mtime=M, compare-and-swap write.
 	 * base = the hash this client last saw ("" for "must not exist yet"). */
 	async put(path: string, data: Uint8Array, base: string, mtime: number): Promise<PutResult> {
 		const res = await this.authed(
@@ -193,7 +193,7 @@ export class RemoteClient {
 		throw errorFor(res);
 	}
 
-	/** DELETE /v1/file?path=P&base=H — moves the file to .trash.
+	/** DELETE /v1/file?path=P&base=H, moves the file to .trash.
 	 * A 404 (already gone) is treated as success, per protocol. */
 	async del(path: string, base: string): Promise<DeleteResult> {
 		const res = await this.authed("DELETE", "/v1/file", [
@@ -309,7 +309,7 @@ function arrayBufferOf(bytes: Uint8Array): ArrayBuffer {
 	return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
-/** Builds a Transport backed by the global fetch() — used by integration
+/** Builds a Transport backed by the global fetch(), used by integration
  * tests (Node) against a real notekeeperd instance. Never used at runtime
  * inside Obsidian (fetch is CORS-limited and unavailable in some mobile
  * contexts); production always uses makeObsidianTransport. */

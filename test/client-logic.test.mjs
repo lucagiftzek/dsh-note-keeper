@@ -98,3 +98,24 @@ test('tree building, rows and resolver', () => {
   assert.equal(fileKind(entries[2]), 'audio')
   assert.equal(fileKind({ path: 'q.png.nkenc' }), 'sealed')
 })
+
+test('markdown: nothing in a note loads from another host (server-loaded preview)', () => {
+  const render = createRenderer(makeResolver(['attachments/pic.png']))
+  const html = render([
+    '![remote](https://example.com/a.png) ![local](attachments/pic.png)',
+    '',
+    '<img src="https://tracker.example/p.gif"> <img src="//cdn.example/x.png">',
+    '<video src="https://v.example/m.mp4" poster="https://v.example/p.jpg"></video>',
+    '<picture><source srcset="https://s.example/a.webp 1x"></picture>',
+    '<span style="background:url(https://bg.example/b.png)">bg</span>',
+    '<a href="https://example.org/page">raw link</a> [md link](https://example.org/x)',
+  ].join('\n'))
+  assert.match(html, /<img[^>]*data-nk-remote="https:\/\/example\.com\/a\.png"/)
+  assert.match(html, /data-nk-remote="https:\/\/tracker\.example\/p\.gif"/)
+  assert.match(html, /data-nk-remote="https:\/\/cdn\.example\/x\.png"/)
+  assert.match(html, /<img[^>]+src="\/note-keeper\/api\/file\?path=attachments%2Fpic\.png"/)
+  // No attribute that the browser would fetch points at another host.
+  assert.doesNotMatch(html, /\s(src|poster|srcset|background)="(https?:)?\/\//)
+  assert.doesNotMatch(html, /url\(/)
+  for (const m of html.matchAll(/<a [^>]*href="https?:[^"]*"[^>]*>/g)) assert.match(m[0], /rel="noopener noreferrer"/)
+})

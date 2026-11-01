@@ -12,7 +12,7 @@ const LOCK_MARKER = ".nk-lock.json";
 
 /** Recursively lists every regular file under the vault root, including
  * hidden marker files (".nk-lock.json") that the adapter itself does not
- * hide, but excluding any other dot-prefixed file or folder — the caller
+ * hide, but excluding any other dot-prefixed file or folder, the caller
  * (SyncEngine) applies the full exclusion policy; this only guarantees the
  * marker is not silently dropped by a naive "skip all dotfiles" listing. */
 export class ObsidianFS implements LocalFS {

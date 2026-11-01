@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.2.0 — 2026-09-27
+## 0.3.0 (2026-11-01)
+
+- **Remote images go through the server.** An image from another site in a note (Markdown or raw HTML `img`, `srcset`, `poster`, `style url()`) is no longer fetched by the browser: `GET /note-keeper/api/remote-image?url=` fetches it server-side behind the existing security gate, with an SSRF guard (https on port 443 only, public addresses only checked at connect time, redirects re-validated, `image/*` only, 10 MiB, 15 s, no cookies or referer). SVG gets a sandboxing CSP. Other remote load attributes in raw HTML are dropped; remote links open noopener noreferrer.
+- **Fix:** on DSH 0.2.1 the `notes_*` tools failed with "value is not lossless JSON" (undefined tags or encrypted fields in `notes_list`). Results are sanitized at the tool boundary; regression test added.
+- Docs without dash punctuation; package metadata for the DSH plugin registries.
+
+## 0.2.0 (2026-09-27)
 
 - **Live preview editor** (CodeMirror 6): [[wikilinks]], [markdown](links) and #tags render
   as clickable links and tag pills while typing; heading/emphasis markers hide, tasks become
@@ -24,7 +30,7 @@
   are never sent.
 - The lock button is context-aware: it encrypts the open plain note, or locks an unlocked one.
 
-## 0.1.0 — 2026-09-28
+## 0.1.0 (2026-09-28)
 
 Initial release.
 

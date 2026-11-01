@@ -60,13 +60,13 @@ snapshot rather than a live feature tracker.
   expansion (`ApplyTemplate` in `api.go`).
 - **Quick capture (Google Keep's core loop, adapted to a single Inbox
   file).** `notes_capture` and the sidebar's capture dialog append a
-  timestamped bullet or task to `Inbox.md` — the same "capture now, file
+  timestamped bullet or task to `Inbox.md`: the same "capture now, file
   later" workflow Keep is built around, but landing in an ordinary Markdown
   file instead of a proprietary note object.
 - **Nested tags and full-text search (Logseq/Obsidian, tuned for a bilingual
   household).** `note.Fold` in `note.go` folds Greek and Latin diacritics
   (Καλημέρα ≈ καλημερα) so search and tag matching work the same regardless
-  of accents or case — a refinement neither Obsidian nor Logseq ship out of
+  of accents or case, a refinement neither Obsidian nor Logseq ship out of
   the box, driven by the author's actual bilingual (Greek/English/Italian)
   usage.
 - **Zero-knowledge end-to-end encryption (Standard Notes' core promise,
@@ -93,7 +93,7 @@ snapshot rather than a live feature tracker.
   Notion AI and Apple Intelligence are the closest, both cloud/OS-vendor
   features, not app-defined tools).** `lib/tools.js`'s 12 `notes_*` tools
   let the DSH host chat's model read, search and edit the vault under the
-  same conflict-detection and path-safety rules as the human — and under a
+  same conflict-detection and path-safety rules as the human, and under a
   hard "never touch encrypted content" rule no compared app enforces because
   none of them expose a first-class AI tool surface at all.
 
@@ -103,13 +103,13 @@ snapshot rather than a live feature tracker.
   Notes, Evernote shared notebooks).** Note Keeper is single-writer per
   session by design: the conflict-detection model (`baseMtime` +
   a conflict banner) assumes edits are rare collisions between a human, an
-  AI tool and a sync client landing an offline edit — not simultaneous
+  AI tool and a sync client landing an offline edit, not simultaneous
   cursors in the same document. True operational-transform or CRDT-based
   concurrent editing is a different architecture (a live document server,
   not a filesystem watcher) and would conflict with the "it's just files on
   disk" design that makes Obsidian/Syncthing/git compatibility free.
 - **Notion-style databases and structured properties.** Notion's core
-  strength — typed properties, views, relations, formulas — needs a real
+  strength, typed properties, views, relations, formulas, needs a real
   schema and query engine, which is exactly what a plain-Markdown vault
   avoids. Dataview/Bases-style plugins bolt something similar onto
   Obsidian; Note Keeper could eventually parse frontmatter into filterable
@@ -135,7 +135,7 @@ snapshot rather than a live feature tracker.
 
 ## Roadmap (prioritized)
 
-1. **Frontmatter "properties" view** — a lightweight, read-only table view
+1. **Frontmatter "properties" view**: a lightweight, read-only table view
    over a folder's frontmatter keys (closest useful subset of Notion's
    databases without adopting its data model).
 2. **Mobile-friendly layout** for the existing web GUI (a phone browser

@@ -4,7 +4,7 @@
  * attachment viewer, search, graph, audio recorder and paint canvas.
  */
 import * as React from 'react'
-import { api, subscribe, transcribe, polish, fileUrl, ApiError } from './api.js'
+import { api, subscribe, transcribe, polish, fileUrl, remoteImageUrl, remoteImagesProxied, ApiError } from './api.js'
 import { KeyRing, parseEnvelope, sealNote, openNote, deriveKey, randomBytes, unb64, makeFolderMarker, unlockFolderKey, sealBlob, openBlob, openBlobNamed, ITERATIONS } from './crypto.js'
 import { putFile as uploadFile, putSealed } from './upload.js'
 import { createRenderer, outline, counts, splitFrontmatter } from './markdown.js'
@@ -328,7 +328,7 @@ export function App() {
   const putFile = (blob, name, dir, encrypted, onProgress) => uploadFile(api, blob, name, dir, encrypted, onProgress)
   /** Upload into the right place; returns the vault path. Inside an encrypted
    *  folder the file is sealed in the browser and stored under an opaque random
-   *  name — the original name travels only inside the ciphertext, so neither
+   *  name: the original name travels only inside the ciphertext, so neither
    *  the connection nor the vault reveals what the file was. */
   const uploadBlob = async (blob, name, nearPath) => {
     const folder = nearPath !== undefined ? dirOf(nearPath) : currentFolder()
@@ -641,6 +641,22 @@ export function App() {
     })
   })
   useEffect(() => () => { for (const u of sealedUrls.current.values()) URL.revokeObjectURL(u) }, [])
+
+  // ---- remote images in the preview: loaded through the server -----------------
+  // The browser never contacts the remote host; until the server half with
+  // /remote-image is loaded (next dsh-web restart) the old direct load stays.
+  useEffect(() => {
+    const els = document.querySelectorAll('.nk-root img[data-nk-remote]:not([src])')
+    if (!els.length) return
+    remoteImagesProxied().then((proxied) => {
+      els.forEach((el) => {
+        const u = el.getAttribute('data-nk-remote') || ''
+        if (el.getAttribute('src') || !/^https?:\/\//i.test(u)) return
+        el.setAttribute('referrerpolicy', 'no-referrer')
+        el.src = proxied ? remoteImageUrl(u) : u
+      })
+    })
+  })
 
   // ---- rendering -------------------------------------------------------------
   const rowIcon = (node) => {

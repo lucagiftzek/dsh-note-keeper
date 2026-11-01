@@ -5,7 +5,7 @@
  ┌─────────────────────────────┐   same-     ┌──────────────────────────────────┐  HTTP +    ┌───────────────────────────────┐
  │ sidebar.panellist "Notes"   │   origin    │ lib/index.js  apply()            │  X-NK-     │ api      routes, limits, OCR  │
  │ main slot "note-keeper"     │──fetch/SSE─▶│  ├ proxy.js  /note-keeper/api/*  │──Secret──▶ │ index    search/tags/links    │
- │  App.jsx  Editor Recorder   │             │  │   security.js gate R1–R4      │            │ watch    fsnotify + SSE hub   │
+ │  App.jsx  Editor Recorder   │             │  │   security.js gate R1-R4      │            │ watch    fsnotify + SSE hub   │
  │  Paint Graph crypto.js      │             │  ├ daemon.js  spawn/supervise    │◀─stdout────│ vault    safe paths, atomic   │
  │  (keys never leave the tab) │             │  └ tools.js   12 notes_* tools   │ NK_LISTEN  │          writes, locks, trash │
  └─────────────────────────────┘             └──────────────────────────────────┘            └──────────────┬────────────────┘
@@ -83,7 +83,7 @@ nk-hint: "<optional>"
 | Server / daemon / disk | file and folder names, sizes, times, envelope metadata, hint | note bodies, attachment contents, passwords, keys |
 | Sync providers, Obsidian | same as server | same |
 | AI tools | plaintext notes only | encrypted notes (tools refuse), cannot write into locked folders |
-| Browser tab with key | everything in the unlocked scope | — |
+| Browser tab with key | everything in the unlocked scope | none |
 
 Known limits: names stay visible; transcription of audio in an encrypted folder
 sends the audio to the speech service (the UI asks first); a compromised browser

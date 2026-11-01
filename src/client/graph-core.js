@@ -1,5 +1,5 @@
 /**
- * graph-core.js — pure force-directed graph layout logic. No DOM, no React.
+ * graph-core.js: pure force-directed graph layout logic. No DOM, no React.
  * Exports: createSim, step, neighbors, filterLocal.
  */
 
@@ -77,7 +77,7 @@ export function step(sim, alpha = 0.3) {
   const DAMPING = 0.85;
 
   // Repulsion: every pair of (capped) nodes pushes apart. If there are more
-  // nodes than the cap, only the first cap participate in repulsion — the
+  // nodes than the cap, only the first cap participate in repulsion, the
   // rest still get springs/centering, bounding worst-case cost.
   for (let i = 0; i < cap; i++) {
     for (let j = i + 1; j < cap; j++) {
@@ -164,7 +164,7 @@ export function neighbors(sim, id, depth = 1) {
 
 /**
  * Filter a raw node/edge list down to the local neighborhood around a focus
- * node (BFS up to depth hops). Pure function — does not require a sim.
+ * node (BFS up to depth hops). Pure function, does not require a sim.
  * @param {{id:string}[]} nodes
  * @param {{source:string, target:string}[]} edges
  * @param {string} focusId

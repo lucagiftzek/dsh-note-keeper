@@ -13,8 +13,8 @@ package api
 // (vault.List skips dot files, so an upload in flight never shows up in the
 // tree) and are renamed into their final unique path at finish. Any failure
 // drops the session and removes the staging file, so nothing partial lingers.
-// The metadata (name, dir) travels in the JSON body of begin — never in a
-// URL — so edge and proxy logs never learn file names.
+// The metadata (name, dir) travels in the JSON body of begin, never in a
+// URL: so edge and proxy logs never learn file names.
 
 import (
 	"crypto/rand"

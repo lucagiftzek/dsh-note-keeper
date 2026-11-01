@@ -1,4 +1,4 @@
-// Unit tests for paint-core.js — flood fill, vector doc model, undo stack.
+// Unit tests for paint-core.js: flood fill, vector doc model, undo stack.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -54,7 +54,7 @@ test('floodFill fills a bounded region and stops at the boundary', () => {
 
 test('floodFill respects tolerance to bridge near-matching colours', () => {
   const img = makeImage(4, 1, [200, 200, 200, 255]);
-  // Slightly different shade at x=2 — should still be included with enough tolerance.
+  // Slightly different shade at x=2, should still be included with enough tolerance.
   const i = (0 * 4 + 2) * 4;
   img.data[i] = 210; img.data[i + 1] = 210; img.data[i + 2] = 210; img.data[i + 3] = 255;
 

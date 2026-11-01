@@ -1,5 +1,5 @@
 /**
- * Paint.jsx — retro MS-Paint-style drawing editor for Note Keeper.
+ * Paint.jsx: retro MS-Paint-style drawing editor for Note Keeper.
  *
  * Exports:
  *   - PaintEditor({ title, initialPngUrl, initialVector, onSave, onOcr, onClose })
@@ -11,7 +11,7 @@
  * colours, Silkscreen display font for labels, DSH theme background/label
  * variables so the editor works in both dark and light mode.
  *
- * Only 'react' and our own paint-core.js are imported — no other packages.
+ * Only 'react' and our own paint-core.js are imported, no other packages.
  */
 
 import * as React from 'react';

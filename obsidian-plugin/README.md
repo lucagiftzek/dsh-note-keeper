@@ -4,7 +4,7 @@ An Obsidian community plugin that syncs your vault two ways with a
 [Note Keeper](../README.md) server: pairing codes, HMAC-signed requests,
 a three-way merge (with a local base map so it survives interruptions),
 conflict copies, and awareness of encrypted (locked) folders. Works on
-desktop and mobile — the protocol and every wire call are described in
+desktop and mobile, the protocol and every wire call are described in
 `../docs/SYNC-PROTOCOL.md`.
 
 ## Install
@@ -46,15 +46,15 @@ credentials and can be revoked independently from the Note Keeper UI.
 Every run computes, for each path in *local ∪ remote ∪ last-known-base*,
 which of the three-way cases from `docs/SYNC-PROTOCOL.md` applies:
 unchanged, pull, push, a delete propagated either direction, "never lose
-an edit" when one side deleted while the other edited, or — when both
-sides changed independently — a **conflict**.
+an edit" when one side deleted while the other edited, or, when both
+sides changed independently, a **conflict**.
 
 - **Conflicts** rename the local copy to
   `Name (conflict <device> YYYY-MM-DD HHmm).ext`, push that copy to the
   server under its new name, and pull the server's version into the
   original path. Nothing is silently overwritten or lost.
 - **Deletes** go to the platform trash on both sides (Obsidian's own
-  trash locally, `.trash/` on the server) — never a hard delete.
+  trash locally, `.trash/` on the server), never a hard delete.
 - **The deletion guard** refuses to delete more than half the synced
   files (and more than 10) in a single pass, to protect against e.g. a
   botched vault move being read as "everything is gone". Use
@@ -96,9 +96,9 @@ path and a one-line detail).
   captured request cannot be replayed.
 - Revoke a device any time from the Note Keeper server UI; a revoked
   device gets 401 on its next request and the plugin surfaces that as
-  "not connected" — reconnect with a fresh pairing code to resume.
+  "not connected", reconnect with a fresh pairing code to resume.
 - **Disconnect** in the plugin settings forgets the stored credentials
-  and the local base map (it does not revoke the device server-side —
+  and the local base map (it does not revoke the device server-side,
   do that from Note Keeper too if the device should no longer be able
   to sync at all).
 
@@ -110,7 +110,7 @@ The plugin is built to run unmodified on iOS and Android:
   it is not subject to CORS and works the same in the mobile WebView as
   in the desktop Electron app.
 - All cryptography (SHA-256, HMAC-SHA256) uses `globalThis.crypto.subtle`
-  (Web Crypto) — no Node `crypto` module, which does not exist on
+  (Web Crypto), no Node `crypto` module, which does not exist on
   mobile.
 - The filesystem layer uses only `app.vault.adapter` and `app.vault`
   APIs (list/stat/read/write/trash/rename), never Node's `fs`.
@@ -128,10 +128,10 @@ npm test            # type-check, then the unit + integration test suites
 
 `npm test` runs two Node test files:
 
-- `test/engine.test.ts` — unit tests for the three-way decision table,
+- `test/engine.test.ts`: unit tests for the three-way decision table,
   exclusions and the deletion guard, entirely in-memory (no filesystem,
   no network).
-- `test/integration.test.ts` — builds (or reuses `../bin/notekeeperd`)
+- `test/integration.test.ts`: builds (or reuses `../bin/notekeeperd`)
   and spawns the real Go server, pairs real devices through its admin
   and sync APIs, and drives the actual `RemoteClient`/`SyncEngine`
   against it: initial sync, edits, conflicts, deletes, Greek/space
@@ -141,16 +141,16 @@ npm test            # type-check, then the unit + integration test suites
 
 ## Module layout
 
-- `src/crypto.ts` — Web Crypto helpers (SHA-256, HMAC-SHA256 signing,
+- `src/crypto.ts`: Web Crypto helpers (SHA-256, HMAC-SHA256 signing,
   nonces, base64url), no Node APIs.
-- `src/remote.ts` — `RemoteClient`, a signed HTTP client for the sync
+- `src/remote.ts`: `RemoteClient`, a signed HTTP client for the sync
   protocol, driven by an injected transport (`obsidian.requestUrl` in
   production, `fetch` in tests).
-- `src/engine.ts` — `SyncEngine`, the pure three-way sync algorithm
+- `src/engine.ts`: `SyncEngine`, the pure three-way sync algorithm
   against the `LocalFS`/`RemoteSyncClient` interfaces; no Obsidian or
   Node dependency, so it is unit-testable in isolation.
-- `src/obsidian-fs.ts` — `ObsidianFS`, the `LocalFS` implementation over
+- `src/obsidian-fs.ts`: `ObsidianFS`, the `LocalFS` implementation over
   `app.vault.adapter`.
-- `src/main.ts` — the `Plugin` subclass: settings tab, status bar,
+- `src/main.ts`: the `Plugin` subclass: settings tab, status bar,
   ribbon icon, commands, vault event wiring, scheduling and the sync log
   modal.

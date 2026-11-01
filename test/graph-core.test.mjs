@@ -1,4 +1,4 @@
-// Unit tests for graph-core.js — force simulation and neighbourhood filtering.
+// Unit tests for graph-core.js: force simulation and neighbourhood filtering.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createSim, step, neighbors, filterLocal } from '../src/client/graph-core.js';
@@ -11,7 +11,7 @@ test('connected nodes converge closer together than an unconnected node', () => 
   const nodes = [
     { id: 'a', kind: 'note' },
     { id: 'b', kind: 'note' },
-    { id: 'c', kind: 'note' }, // isolated — no edges
+    { id: 'c', kind: 'note' }, // isolated, no edges
   ];
   const edges = [{ source: 'a', target: 'b' }];
   const sim = createSim(nodes, edges, { width: 400, height: 400, seed: 7 });

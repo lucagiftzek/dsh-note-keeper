@@ -1,6 +1,6 @@
 {
   "name": "dsh-note-keeper",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Note Keeper for the DeepSeek Harness web GUI: an Obsidian-compatible notes app in the left sidebar - Markdown notes, audio transcription (Greek/English), a retro paint canvas with OCR, attachments, client-side zero-knowledge encryption, tags, full-text search, backlinks and graph - with notes_* tools so models can read and write notes. Go backend.",
   "type": "module",
   "main": "lib/index.js",
@@ -15,13 +15,14 @@
     "cordis.patch.yml",
     "docs",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
-    "build:server": "cd server && go build -trimpath -ldflags '-s -w -X main.version=0.1.0' -o ../bin/notekeeperd ./cmd/notekeeperd",
+    "build:server": "cd server && go build -trimpath -ldflags '-s -w -X main.version=0.3.0' -o ../bin/notekeeperd ./cmd/notekeeperd",
     "build:client": "node scripts/build.mjs",
     "build": "npm run build:server && npm run build:client",
-    "check": "for f in lib/index.js lib/daemon.js lib/proxy.js lib/security.js lib/tools.js scripts/build.mjs test/*.mjs src/client/*.js; do node --check $f || exit 1; done && echo 'all files OK'",
+    "check": "for f in lib/index.js lib/daemon.js lib/proxy.js lib/remote.js lib/security.js lib/tools.js scripts/build.mjs test/*.mjs src/client/*.js; do node --check $f || exit 1; done && echo 'all files OK'",
     "test:server": "cd server && go vet ./... && go test -race -count=1 ./...",
     "test:host": "node --test test/*.test.mjs",
     "test": "npm run test:server && npm run test:host",
@@ -55,9 +56,9 @@
     "react-dom": "^18.3.1"
   },
   "keywords": [
-    "deepseek-harness",
     "dsh",
     "dsh-plugin",
+    "deepseek-harness",
     "notes",
     "obsidian",
     "markdown",
@@ -86,5 +87,9 @@
     "@lezer/markdown": "^1.7.2",
     "dompurify": "^3.4.16",
     "marked": "^15.0.12"
+  },
+  "homepage": "https://github.com/lucagiftzek/dsh-note-keeper#readme",
+  "bugs": {
+    "url": "https://github.com/lucagiftzek/dsh-note-keeper/issues"
   }
 }
